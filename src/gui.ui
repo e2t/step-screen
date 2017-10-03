@@ -116,6 +116,15 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>cmb_width_size</tabstop>
+  <tabstop>cmb_height_size</tabstop>
+  <tabstop>cmb_gap</tabstop>
+  <tabstop>cmb_thickness</tabstop>
+  <tabstop>edt_depth_channel</tabstop>
+  <tabstop>btn_run</tabstop>
+  <tabstop>edt_results</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
