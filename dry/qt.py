@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, Callable, Union
+from typing import Optional, Tuple, TypeVar, Type, Generic
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QTextCursor
@@ -8,39 +8,54 @@ from .core import get_translate, InputException, get_dir_current_file
 _ = get_translate(get_dir_current_file(__file__), 'ru', 'common')
 
 
-AnyNumber = Union[int, float]
-Limit = Optional[Tuple[AnyNumber, bool]]  # (limit, maybe_equal)
+AnyNumber = TypeVar('AnyNumber', int, float)
+Limit = Tuple[AnyNumber, bool]  # (value of limit, can be equal)
 
 
-def get_number(lineedit: QtWidgets.QLineEdit,
-               min_limit: Limit, max_limit: Limit,
-               out_type: Callable[[str], AnyNumber]=float) -> AnyNumber:
-    text = lineedit.text().replace(',', '.')
-    try:
-        number = out_type(text)
-    except ValueError:
-        stop_in_lineedit(lineedit, _('Incorrect string format'))
-    if min_limit:
-        if min_limit[1]:
-            if number < min_limit[0]:
-                stop_in_lineedit(lineedit, _(
-                    'Input a value greater than or equal to {0}').format(
-                        min_limit[0]))
-        else:
-            if number <= min_limit[0]:
-                stop_in_lineedit(lineedit, _(
-                    'Input a value greater than {0}').format(min_limit[0]))
-    if max_limit:
-        if max_limit[1]:
-            if number > max_limit[0]:
-                stop_in_lineedit(lineedit, _(
-                    'Input a value less than or equal to {0}').format(
-                        max_limit[0]))
-        else:
-            if number >= max_limit[0]:
-                stop_in_lineedit(lineedit, _(
-                    'Input a value less than {0}').format(max_limit[0]))
-    return number
+class GetNumber(Generic[AnyNumber]):
+    @staticmethod
+    def get_number(lineedit: QtWidgets.QLineEdit,
+                   min_limit: Optional[Limit],
+                   max_limit: Optional[Limit],
+                   out_type: Type[AnyNumber]) -> AnyNumber:
+        text = lineedit.text().replace(',', '.')
+        try:
+            number = out_type(text)
+        except ValueError:
+            stop_in_lineedit(lineedit, _('Incorrect string format'))
+        if min_limit:
+            if min_limit[1]:
+                if number < min_limit[0]:
+                    stop_in_lineedit(lineedit, _(
+                        'Input a value greater than or equal to {0}').format(
+                            min_limit[0]))
+            else:
+                if number <= min_limit[0]:
+                    stop_in_lineedit(lineedit, _(
+                        'Input a value greater than {0}').format(min_limit[0]))
+        if max_limit:
+            if max_limit[1]:
+                if number > max_limit[0]:
+                    stop_in_lineedit(lineedit, _(
+                        'Input a value less than or equal to {0}').format(
+                            max_limit[0]))
+            else:
+                if number >= max_limit[0]:
+                    stop_in_lineedit(lineedit, _(
+                        'Input a value less than {0}').format(max_limit[0]))
+        return number
+
+
+def get_int_number(lineedit: QtWidgets.QLineEdit,
+                   min_limit: Optional[Limit],
+                   max_limit: Optional[Limit]) -> int:
+    return GetNumber.get_number(lineedit, min_limit, max_limit, int)
+
+
+def get_float_number(lineedit: QtWidgets.QLineEdit,
+                     min_limit: Optional[Limit],
+                     max_limit: Optional[Limit]) -> float:
+    return GetNumber.get_number(lineedit, min_limit, max_limit, float)
 
 
 def stop_in_lineedit(lineedit: QtWidgets.QLineEdit, warning: str) -> None:

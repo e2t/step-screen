@@ -5,6 +5,7 @@
 - [Python 3.6.1+](https://www.python.org/downloads/)
 - [PyQt5](https://pypi.python.org/pypi/PyQt5)
 - [pyqt5-tools](https://pypi.python.org/pypi/pyqt5-tools)
+- [ptable](https://pypi.python.org/pypi/PTable)
 - [GetText](http://gnuwin32.sourceforge.net/packages/gettext.htm)
 
 Для создания бинарных сборок для Windows используется [cx_Freeze](https://pypi.python.org/pypi/cx_Freeze).
