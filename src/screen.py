@@ -15,8 +15,8 @@ class StepScreen(NamedTuple):
 
 FIRST_STAIR = 169.7  # высота донной ступени
 STEP_STAIR = 95.8  # шаг зубьев по вертикали
-ORIENTAL_THICKNESS_SIDEWALL = 125
-THICKNESS_SIDEWALL = 118
+SMALL_THICKNESS_SIDEWALL = 105  # толщины боковины малых решеток
+BIG_THICKNESS_SIDEWALL = 118  # толщина боковины больших решеток
 WEIGHT_MOTOR = 83
 
 
@@ -179,6 +179,22 @@ def fixed_grid(number_strips: int, thick_plastic: float,
             (fixed_balk(internal_width) + wedge(internal_width)) * 4)
 
 
+def calc_thickness_sidewall(is_small_screen: bool) -> float:
+    if is_small_screen:
+        result = SMALL_THICKNESS_SIDEWALL
+    else:
+        result = BIG_THICKNESS_SIDEWALL
+    return result
+
+
+def calc_internal_width(external_width: float, is_small_screen: bool) -> float:
+    return external_width - 2 * calc_thickness_sidewall(is_small_screen)
+
+
+def calc_external_width(internal_width: float, is_small_screen: bool) -> float:
+    return internal_width + 2 * calc_thickness_sidewall(is_small_screen)
+
+
 # Масса подвижной решетки.
 def moving_grid(number_strips: int, thick_plastic: float,
                 steel_steps: int, plastic_steps: int,
@@ -197,19 +213,18 @@ def correct(external_width: float, ejection_height: float) -> float:
             0.18252 * external_width - 0.06067 * ejection_height)
 
 
-def calc_step_screen(oriental_ext_width: float, ejection_height: float,
-                     moving_plate_thickness: float,
-                     fixed_plate_thickness: float, gap: float,
-                     depth_channel: float) -> StepScreen:
+def calc_step_screen(
+        oriental_ext_width: float, ejection_height: float,
+        moving_plate_thickness: float, fixed_plate_thickness: float,
+        gap: float, depth_channel: float, is_small_screen: bool) -> StepScreen:
     parameters_plates = plates.calc_parameters_plates(
         thickness_mov_steel=moving_plate_thickness,
         thickness_fix_steel=fixed_plate_thickness,
         gap_steel=gap,
-        oriental_width=(oriental_ext_width -
-                        2 * ORIENTAL_THICKNESS_SIDEWALL)
+        max_width=calc_internal_width(oriental_ext_width, is_small_screen)
     )
     internal_width = parameters_plates.width
-    external_width = internal_width + 2 * THICKNESS_SIDEWALL
+    external_width = calc_external_width(internal_width, is_small_screen)
     short_ejection_height = ejection_height - depth_channel
     steel_steps = number_steps(depth_channel)
     plastic_steps = (number_steps(ejection_height) -

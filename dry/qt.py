@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, TypeVar, Type, Generic
+from typing import Optional, Tuple, TypeVar, Type, Generic, Union
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QTextCursor
@@ -10,14 +10,24 @@ _ = get_translate(get_dir_current_file(__file__), 'ru', 'common')
 
 AnyNumber = TypeVar('AnyNumber', int, float)
 Limit = Tuple[AnyNumber, bool]  # (value of limit, can be equal)
+TextWidget = Union[QtWidgets.QLineEdit, QtWidgets.QComboBox]
+
+
+def get_lineedit(widget: TextWidget) -> QtWidgets.QLineEdit:
+    if isinstance(widget, QtWidgets.QLineEdit):
+        result = widget
+    else:
+        result = widget.lineEdit()
+    return result
 
 
 class GetNumber(Generic[AnyNumber]):
     @staticmethod
-    def get_number(lineedit: QtWidgets.QLineEdit,
+    def get_number(widget: TextWidget,
                    min_limit: Optional[Limit],
                    max_limit: Optional[Limit],
                    out_type: Type[AnyNumber]) -> AnyNumber:
+        lineedit = get_lineedit(widget)
         text = lineedit.text().replace(',', '.')
         try:
             number = out_type(text)
@@ -46,16 +56,16 @@ class GetNumber(Generic[AnyNumber]):
         return number
 
 
-def get_int_number(lineedit: QtWidgets.QLineEdit,
+def get_int_number(widget: TextWidget,
                    min_limit: Optional[Limit],
                    max_limit: Optional[Limit]) -> int:
-    return GetNumber.get_number(lineedit, min_limit, max_limit, int)
+    return GetNumber.get_number(widget, min_limit, max_limit, int)
 
 
-def get_float_number(lineedit: QtWidgets.QLineEdit,
+def get_float_number(widget: TextWidget,
                      min_limit: Optional[Limit],
                      max_limit: Optional[Limit]) -> float:
-    return GetNumber.get_number(lineedit, min_limit, max_limit, float)
+    return GetNumber.get_number(widget, min_limit, max_limit, float)
 
 
 def stop_in_lineedit(lineedit: QtWidgets.QLineEdit, warning: str) -> None:
@@ -81,7 +91,7 @@ class BaseMainWindow(QtWidgets.QDialog):  # type: ignore
         self.connect_actions()
 
 
-def move_cursor_to_begin(line_edit: QtWidgets.QLineEdit) -> None:
+def move_cursor_to_begin(line_edit: TextWidget) -> None:
     cursor = line_edit.textCursor()
     cursor.movePosition(QTextCursor.Start, QTextCursor.MoveAnchor, 1)
     line_edit.setTextCursor(cursor)
