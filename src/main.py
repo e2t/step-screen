@@ -22,6 +22,9 @@ THICKNESS_STEEL = OrderedDict({
 STANDARD_EACH_SIDE_GAP = 25  # СНГ
 WIDE_EACH_SIDE_GAP = 10  # Европа
 
+# Ширина пластиковых ламелей.
+WIDTH_PLASTIC = 227
+
 
 WidthSizes = Dict[str, float]
 
@@ -32,7 +35,7 @@ def sign_of_size(value: int) -> str:
 
 def screen_size(first: int, last: int) -> WidthSizes:
     return OrderedDict({sign_of_size(i):
-                        (i + 1) * 100 for i in range(first, last + 1)})
+                        (i + 1) * 100 for i in range(first, last)})
 
 
 def big_and_small_sizes(first_small: int, first_big: int, last: int) -> \
@@ -41,8 +44,9 @@ def big_and_small_sizes(first_small: int, first_big: int, last: int) -> \
 
 
 # Малые решетки, большие решетки (по ширине).
+# Малые 04-07, большие 08-22.
 NARROW_CHANNELS, WIDE_CHANNELS = big_and_small_sizes(4, 8, 23)
-# Типоразмер по ширине : условная наружная ширина решетки
+# Типоразмер по ширине : условная наружная ширина решетки.
 CHANNEL_WIDTHS: WidthSizes = OrderedDict()
 CHANNEL_WIDTHS.update(NARROW_CHANNELS)
 CHANNEL_WIDTHS.update(WIDE_CHANNELS)
@@ -126,9 +130,11 @@ class MainWindow(BaseMainWindow, gui.Ui_Dialog):
         is_wide_screen = self.rad_is_wide_width.isChecked()
         oriental_ext_width = calc_max_width(width_size, is_wide_screen)
         is_small_screen = calc_is_small_size(width_size)
-        moving_plate_thickness, fixed_plate_thickness = THICKNESS_STEEL[
-            self.cmb_thickness.currentText()]
-        ejection_height = HEIGHTS[self.cmb_height_size.currentText()]
+        thickness_size = self.cmb_thickness.currentText()
+        moving_plate_thickness, fixed_plate_thickness = \
+            THICKNESS_STEEL[thickness_size]
+        height_size = self.cmb_height_size.currentText()
+        ejection_height = HEIGHTS[height_size]
         try:
             depth_channel = get_float_number(
                 self.edt_depth_channel, (FIRST_STAIR, False),
@@ -146,14 +152,26 @@ class MainWindow(BaseMainWindow, gui.Ui_Dialog):
                 depth_channel=depth_channel,
                 is_small_screen=is_small_screen)
             power_drive = select_max_power(width_size, ejection_height)
-            self.output_results(screen, power_drive)
+            mark_screen = width_size + height_size
+            self.output_results(screen, power_drive, mark_screen, gap,
+                                thickness_size, depth_channel, is_small_screen)
 
-    def output_results(self, screen: StepScreen, power_drive: float) -> None:
+    def output_results(self, screen: StepScreen, power_drive: float,
+                       mark_screen: str, gap: float,
+                       thickness_size: str, depth_channel: float,
+                       is_small_screen: bool) -> None:
         if screen.parameters_plates.gap_patch > 0:
             warning = ''
         else:
             warning = f' (зазор {screen.parameters_plates.gap_patch} мм)'
+        if is_small_screen:
+            small = ' (малая)'
+        else:
+            small = ''
         self.edt_results.appendPlainText('\n'.join((
+            f'РСК {mark_screen}, прозор {gap:g}, ламели {thickness_size}, '
+            f'канал {depth_channel:g}{small}',
+            '',
             f'Масса решетки {screen.weight:.0f} кг',
             f'Наружная ширина {screen.external_width:g} мм',
             f'Внутренняя ширина {screen.internal_width:g} мм',
@@ -163,12 +181,12 @@ class MainWindow(BaseMainWindow, gui.Ui_Dialog):
             f'Привод {power_drive} кВт',
             f'Вес подвижных частей {screen.moving_weight:.0f} кг',
             '',
-            f'Подвижные пластины {screen.parameters_plates.number_mov_plates} шт.',
-            f'- сталь {screen.parameters_plates.thickness_mov_steel} мм, '
-            f'пластик {screen.parameters_plates.thickness_mov_plastic:g} мм',
-            f'Неподвижные пластины {screen.parameters_plates.number_fix_plates} шт.',
-            f'- сталь {screen.parameters_plates.thickness_fix_steel} мм, '
-            f'пластик {screen.parameters_plates.thickness_fix_plastic:g} мм',
+            f'Подвижных пластин {screen.parameters_plates.number_mov_plates} шт.',
+            f'- сталь {screen.parameters_plates.thickness_mov_steel} мм',
+            f'- пластик {screen.length_plastic:.0f}х{WIDTH_PLASTIC}х{screen.parameters_plates.thickness_mov_plastic:g} мм',
+            f'Неподвижных пластин {screen.parameters_plates.number_fix_plates} шт.',
+            f'- сталь {screen.parameters_plates.thickness_fix_steel} мм',
+            f'- пластик {screen.length_plastic:.0f}х{WIDTH_PLASTIC}х{screen.parameters_plates.thickness_fix_plastic:g} мм',
             f'Шаг пластин по ширине {screen.parameters_plates.step_plates:g} мм',
             '',
             f'Толщина накладки {screen.parameters_plates.thickness_patch:g} мм{warning}',

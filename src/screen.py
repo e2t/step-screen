@@ -11,6 +11,7 @@ class StepScreen(NamedTuple):
     steel_strips_height: float
     parameters_plates: plates.ParametersPlates
     moving_weight: float
+    length_plastic: float
 
 
 FIRST_STAIR = 169.7  # высота донной ступени
@@ -18,6 +19,7 @@ STEP_STAIR = 95.8  # шаг зубьев по вертикали
 SMALL_THICKNESS_SIDEWALL = 105  # толщины боковины малых решеток
 BIG_THICKNESS_SIDEWALL = 118  # толщина боковины больших решеток
 WEIGHT_MOTOR = 83
+WIDTH_PLASTIC_PLATE = 227
 
 
 def number_steps(height: float) -> int:
@@ -213,6 +215,17 @@ def correct(external_width: float, ejection_height: float) -> float:
             0.18252 * external_width - 0.06067 * ejection_height)
 
 
+# Укрупненный расчет длины пластиковых ламелей.
+def calc_length_plastic(short_ejection_height: float,
+                        is_small_screen: bool) -> float:
+    if is_small_screen:
+        length_over_cover = 490
+    else:
+        length_over_cover = 690
+    return (short_ejection_height / math.sin(math.radians(50)) +
+            length_over_cover)
+
+
 def calc_step_screen(
         oriental_ext_width: float, ejection_height: float,
         moving_plate_thickness: float, fixed_plate_thickness: float,
@@ -253,6 +266,8 @@ def calc_step_screen(
                    parameters_plates.thickness_fix_plastic, steel_steps,
                    plastic_steps, gap, fixed_plate_thickness, internal_width) +
         correct(external_width, ejection_height))
+    length_plastic = calc_length_plastic(short_ejection_height,
+                                         is_small_screen)
     return StepScreen(
         weight=weight,
         external_width=external_width,
@@ -260,4 +275,5 @@ def calc_step_screen(
         ejection_height=ejection_height,
         steel_strips_height=steel_strips_height,
         parameters_plates=parameters_plates,
-        moving_weight=moving_weight)
+        moving_weight=moving_weight,
+        length_plastic=length_plastic)

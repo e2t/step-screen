@@ -21,10 +21,18 @@ class ParametersPlates(NamedTuple):
     gap_patch: float
 
 
+# Минимальный прозор между пластиковыми ламелями.
 MIN_PLASTIC_GAP = 0.5
+
+# Максимальный прозор между пластиковыми ламелями.
 MAX_PLATIC_GAP = 1
+
+# Средний прозор между пластиковыми ламелями.
 MIDDLE_PLASTIC_GAP = (MIN_PLASTIC_GAP + MAX_PLATIC_GAP) / 2
 
+# Минимальный зазор между компенсирующей накладкой и крайней пластиковой
+# ламелью.
+MIN_GAP_PATCH_PLASTIC = 0.5
 
 # Толщины пластиковых пластин: 0 - подвижные, 1 - неподвижные.
 # Ключ - сумма толщин пластиковых пластин.
@@ -34,7 +42,6 @@ UNEQUAL_THICKNESS_PLASTIC: Dict[float, Tuple[float, float]] = {
     18: (8, 10),
     22: (10, 12)
 }
-
 
 # Минимальное расстояние между наружной поверхностью фланца и неподвижной
 # пластиковой пластиной.
@@ -87,10 +94,7 @@ def calc_parameters_plates(
                       (number_mov_plates - 1) * gap_steel) / 2
 
     # Толщина компенсирующей накладки.
-    thickness_patch = math.ceil(side_gap_steel - gap_steel / 2)
-
-    # TODO: длина пластиковых пластин
-    # высота сброса от поверхности земли / sin(50) + 490
+    thickness_patch = math.floor(side_gap_plastic - 0.5)
 
     # Зазор между компенсирующей накладкой и крайней пластиковой пластиной
     gap_patch = side_gap_plastic - thickness_patch
