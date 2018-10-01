@@ -1,14 +1,14 @@
-import sys
+﻿import sys
 from collections import OrderedDict
 from typing import Tuple, Dict
 from PyQt5 import QtWidgets
-sys.path.append('..')
+sys.path.append(f'{sys.path[0]}/..')
 import gui
 from screen import StepScreen, calc_step_screen, FIRST_STAIR
 from manifest import VERSION, DESCRIPTION
-from dry.qt import msgbox, BaseMainWindow, move_cursor_to_begin, \
+from Dry.qt import msgbox, BaseMainWindow, move_cursor_to_begin, \
     get_float_number
-from dry.core import InputException
+from Dry.core import InputException
 
 
 # Толщина стальных пластин: 0 - подвижные, 1 - неподвижные
@@ -46,15 +46,23 @@ def big_and_small_sizes(first_small: int, first_big: int, last: int) -> \
 # Малые решетки, большие решетки (по ширине).
 # Малые 04-07, большие 08-22.
 NARROW_CHANNELS, WIDE_CHANNELS = big_and_small_sizes(4, 8, 23)
+
 # Типоразмер по ширине : условная наружная ширина решетки.
 CHANNEL_WIDTHS: WidthSizes = OrderedDict()
 CHANNEL_WIDTHS.update(NARROW_CHANNELS)
 CHANNEL_WIDTHS.update(WIDE_CHANNELS)
+
+# Высота сброса над каналом
+DROP_HEIGHT_FROM_CHANNEL = 950
+
 # Типоразмер по высоте : высота сброса от дна канала.
-HEIGHTS = OrderedDict({sign_of_size(i):
-                       i * 100 + 950 for i in range(6, 40, 3)})
+HEIGHTS = OrderedDict({
+    sign_of_size(i): i * 100 + DROP_HEIGHT_FROM_CHANNEL for i in range(6, 40, 3)
+})
+
 # Прозоры стальных пластин.
 STEEL_GAPS = 3, 5, 6
+
 # Минимальная высота сброса над каналом.
 MIN_SHORT_HEIGHT = 550
 
@@ -70,14 +78,12 @@ def calc_max_width(width_size: str, is_wide_screen: bool) -> float:
 # Расчет мощности привода для конкретной решетки.
 def calc_power_drive(moving_weight: float, is_small_screen: bool) -> float:
     if moving_weight > 700:
-        result = 2.2
-    elif not is_small_screen:
-        result = 1.5
-    elif moving_weight > 300:
-        result = 1.5
-    else:
-        result = 0.75
-    return result
+        return 2.2
+    if not is_small_screen:
+        return 1.5
+    if moving_weight > 300:
+        return 1.5
+    return 0.75
 
 
 def calc_is_small_size(wide_size: str) -> bool:
@@ -85,7 +91,8 @@ def calc_is_small_size(wide_size: str) -> bool:
 
 
 # Выбор максильной мощности привода при разных зазорах и толщинах.
-def select_max_power(wide_size: str, ejection_height: float) -> float:
+def select_max_power(wide_size: str, ejection_height: float,
+        only_steel_strips: bool) -> float:
     depth_channel = ejection_height - MIN_SHORT_HEIGHT
     power_drives = set()
     for moving_plate_thickness, fixed_plate_thickness in \
@@ -100,7 +107,8 @@ def select_max_power(wide_size: str, ejection_height: float) -> float:
                 fixed_plate_thickness=fixed_plate_thickness,
                 gap=gap,
                 depth_channel=depth_channel,
-                is_small_screen=is_small_screen)
+                is_small_screen=is_small_screen,
+                only_steel_strips=only_steel_strips)
             power = calc_power_drive(screen.moving_weight, is_small_screen)
             power_drives.add(power)
     return max(power_drives)
@@ -135,6 +143,7 @@ class MainWindow(BaseMainWindow, gui.Ui_Dialog):
             THICKNESS_STEEL[thickness_size]
         height_size = self.cmb_height_size.currentText()
         ejection_height = HEIGHTS[height_size]
+        only_steel_strips = self.chk_only_steel_strips.isChecked()
         try:
             depth_channel = get_float_number(
                 self.edt_depth_channel, (FIRST_STAIR, False),
@@ -150,16 +159,19 @@ class MainWindow(BaseMainWindow, gui.Ui_Dialog):
                 fixed_plate_thickness=fixed_plate_thickness,
                 gap=gap,
                 depth_channel=depth_channel,
-                is_small_screen=is_small_screen)
-            power_drive = select_max_power(width_size, ejection_height)
+                is_small_screen=is_small_screen,
+                only_steel_strips=only_steel_strips)
+            power_drive = select_max_power(width_size, ejection_height,
+                                           only_steel_strips)
             mark_screen = width_size + height_size
             self.output_results(screen, power_drive, mark_screen, gap,
-                                thickness_size, depth_channel, is_small_screen)
+                                thickness_size, depth_channel, is_small_screen,
+                                only_steel_strips)
 
     def output_results(self, screen: StepScreen, power_drive: float,
                        mark_screen: str, gap: float,
                        thickness_size: str, depth_channel: float,
-                       is_small_screen: bool) -> None:
+                       is_small_screen: bool, only_steel_strips: bool) -> None:
         if screen.parameters_plates.gap_patch > 0:
             warning = ''
         else:
@@ -176,25 +188,44 @@ class MainWindow(BaseMainWindow, gui.Ui_Dialog):
             f'Наружная ширина {screen.external_width:g} мм',
             f'Внутренняя ширина {screen.internal_width:g} мм',
             f'Высота сброса до дна {screen.ejection_height:g} мм',
-            f'Высота стального полотна {screen.steel_strips_height:.0f} мм',
             '',
             f'Привод {power_drive} кВт',
             f'Вес подвижных частей {screen.moving_weight:.0f} кг',
             '',
             f'Подвижных пластин {screen.parameters_plates.number_mov_plates} шт.',
             f'- сталь {screen.parameters_plates.thickness_mov_steel} мм',
-            f'- пластик {screen.length_plastic:.0f}х{WIDTH_PLASTIC}х{screen.parameters_plates.thickness_mov_plastic:g} мм',
+        )))
+        if not only_steel_strips:
+            self.edt_results.appendPlainText('\n'.join((
+                f'- пластик {screen.length_plastic:.0f}х{WIDTH_PLASTIC}х{screen.parameters_plates.thickness_mov_plastic:g} мм',
+            )))
+        self.edt_results.appendPlainText('\n'.join((
             f'Неподвижных пластин {screen.parameters_plates.number_fix_plates} шт.',
             f'- сталь {screen.parameters_plates.thickness_fix_steel} мм',
-            f'- пластик {screen.length_plastic:.0f}х{WIDTH_PLASTIC}х{screen.parameters_plates.thickness_fix_plastic:g} мм',
+        )))
+        if not only_steel_strips:
+            self.edt_results.appendPlainText('\n'.join((
+                f'- пластик {screen.length_plastic:.0f}х{WIDTH_PLASTIC}х{screen.parameters_plates.thickness_fix_plastic:g} мм',
+            )))
+        self.edt_results.appendPlainText('\n'.join((
             f'Шаг пластин по ширине {screen.parameters_plates.step_plates:g} мм',
             '',
             f'Толщина накладки {screen.parameters_plates.thickness_patch:g} мм{warning}',
             'Зазор между:',
-            f'- пластиковыми пластинами {screen.parameters_plates.gap_plastic:g} мм',
-            f'- боковиной и пластиковой пластиной {screen.parameters_plates.side_gap_plastic:g} мм',
             f'- боковиной и стальной пластиной {screen.parameters_plates.side_gap_steel:g} мм',
         )))
+        if not only_steel_strips:
+            self.edt_results.appendPlainText('\n'.join((
+                f'- боковиной и пластиковой пластиной {screen.parameters_plates.side_gap_plastic:g} мм',
+                f'- пластиковыми пластинами {screen.parameters_plates.gap_plastic:g} мм',
+            )))
+        self.edt_results.appendPlainText('\nПластины и опоры:')
+        for mm, kg in screen.steel_sheet_weight.items():
+            if kg:
+                self.edt_results.appendPlainText(f'- сталь {mm:.0f} мм {kg:.0f} кг')
+        for mm, kg in screen.plastic_sheet_weight.items():
+            if kg:
+                self.edt_results.appendPlainText(f'- пластик {mm:.0f} мм {kg:.0f} кг')
         move_cursor_to_begin(self.edt_results)
 
 

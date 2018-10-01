@@ -1,5 +1,5 @@
 import math
-from typing import NamedTuple
+from typing import NamedTuple, Dict
 import plates
 
 
@@ -8,10 +8,11 @@ class StepScreen(NamedTuple):
     external_width: float
     internal_width: float
     ejection_height: float
-    steel_strips_height: float
     parameters_plates: plates.ParametersPlates
     moving_weight: float
     length_plastic: float
+    steel_sheet_weight: Dict[float, float]
+    plastic_sheet_weight: Dict[float, float]
 
 
 FIRST_STAIR = 169.7  # высота донной ступени
@@ -20,163 +21,161 @@ SMALL_THICKNESS_SIDEWALL = 105  # толщины боковины малых р�
 BIG_THICKNESS_SIDEWALL = 118  # толщина боковины больших решеток
 WEIGHT_MOTOR = 83
 WIDTH_PLASTIC_PLATE = 227
+SHEET_SUPPORT = 6.0  # толщина листа опоры решетки
 
 
 def number_steps(height: float) -> int:
     return math.ceil((height - FIRST_STAIR) / STEP_STAIR)
 
 
-# Боковина.
+# Боковина
 def sidewall(ejection_height: float) -> float:
     return 0.052 * ejection_height + 29.271
 
 
-# Стяжка центральная.
+# Стяжка центральная
 def buckle(internal_width: float) -> float:
     return 0.01 * internal_width + 1.0
 
 
-# Стяжка задняя.
+# Стяжка задняя
 def back_buckle(internal_width: float) -> float:
     return 0.01 * internal_width + 3.0
 
 
-# Перегородка нижняя.
+# Перегородка нижняя
 def bottom_buckle(internal_width: float) -> float:
     return 0.012 * internal_width + 1.4
 
 
-# Балка неподвижной решетки.
+# Балка неподвижной решетки
 def fixed_balk(internal_width: float) -> float:
     return 0.012 * internal_width + 2.4
 
 
-# Привод и вал в сборе.
+# Привод и вал в сборе
 def shaft_motor(internal_width: float) -> float:
     return 0.012 * internal_width + 8.1 + WEIGHT_MOTOR
 
 
-# Кронштейн опоры.
+# Кронштейн опоры
 def bracket() -> float:
     return 6.0
 
 
-# Трамплин нижний.
+# Трамплин нижний
 def springboard(internal_width: float) -> float:
     return 0.004 * internal_width - 0.2
 
 
-# Узел распыления.
+# Узел распыления
 def spraying(internal_width: float) -> float:
     return 0.002 * internal_width + 1.4
 
 
-#
+# Склиз
 def slide_ways(internal_width: float) -> float:
     return 0.01 * internal_width + 7.0
 
 
-# Стойка опоры.
+# Стойка опоры
 def stand(short_ejection_height: float) -> float:
     return 0.018 * short_ejection_height + 27.92
 
 
-# Балка подвижной решетки.
+# Балка подвижной решетки
 def moving_balk(internal_width: float) -> float:
     return 0.014 * internal_width + 0.8
 
 
-# Прижимной клин решеток.
+# Прижимной клин решеток
 def wedge(internal_width: float) -> float:
     return 0.004 * internal_width + 1.8
 
 
-# Шатун.
+# Шатун
 def connecting_wall(ejection_height: float) -> float:
     return 0.035 * ejection_height - 29.154
 
 
-# Узел качания.
+# Узел качания
 def triangle() -> float:
     return 3.0
 
 
-# Кривошип большой.
+# Кривошип большой
 def cranck() -> float:
     return 7.0
 
 
-# Кривошип малый (плечо).
+# Кривошип малый (плечо)
 def shoulder() -> float:
     return 2.0
 
 
-# Короткая тяга.
+# Короткая тяга
 def short_rod() -> float:
     return 1.0
 
 
-# Длинная тяга.
+# Длинная тяга
 def long_rod(ejection_height: float) -> float:
     return 0.004 * ejection_height - 1.462
 
 
-# Задняя крышка.
+# Задняя крышка (с табличкой и гермовводами)
 def back_cover(internal_width: float) -> float:
     return 0.006 * internal_width + 7.2
 
 
-#
+# Нижний склиз для защиты от запаха
 def slide_cover(short_ejection_height: float) -> float:
     return 0.016 * short_ejection_height + 9.04
 
 
-# Нижняя крышка.
+# Нижняя крышка (над склизом)
 def bottom_cover(internal_width: float) -> float:
     return 0.006 * internal_width - 0.8
 
 
-# Верхняя крышка.
+# Верхние крышки (общая масса)
 def top_cover(internal_width: float, short_ejection_height: float) -> float:
     return (1.459e-5 * internal_width *
             short_ejection_height + 0.01653 * internal_width -
             0.00434 * short_ejection_height)
 
 
-# Масса подвижной стальной пластины.
+# Масса подвижной стальной пластины
 def moving_steel_strip(steps: int, moving_plate_thickness: float) -> float:
     return (0.093 * steps + 0.217) * moving_plate_thickness
 
 
-# Масса неподвижной стальной платсины.
+# Масса неподвижной стальной платсины
 def fixed_steel_strip(steps: int, fixed_plate_thickness: float) -> float:
     return (0.092 * steps + 0.235) * fixed_plate_thickness
 
 
-# Масса неподвижной пластиковой пластины.
+# Масса неподвижной пластиковой пластины
 def fix_plastic_strip(steps: int, thick: float) -> float:
     return (0.01 * steps + 0.033) * thick
 
 
-# Масса подвижной пластиковой пластины.
+# Масса подвижной пластиковой пластины
 def moving_plastic_strip(steps: int, thick: float) -> float:
     return (0.01 * steps + 0.023) * thick
 
 
-# Масса дистанционной накладки.
+# Масса дистанционной накладки (приварная вдоль боковины)
 def strip_onlay(thick: float) -> float:
     return 0.14 * thick
 
 
-# Масса неподвижной решетки.
-def fixed_grid(number_strips: int, thick_plastic: float,
-               steel_steps: int, plastic_steps: int,
-               gap: float, fixed_plate_thickness: float,
-               internal_width: float) -> float:
-    return (number_strips *
-            fixed_steel_strip(steel_steps, fixed_plate_thickness) +
-            number_strips *
-            fix_plastic_strip(plastic_steps, thick_plastic) +
+# Масса неподвижной решетки
+def fixed_grid(fixed_steel_strips_weight: float,
+               fix_plastic_strips_weight: float,
+               number_strips: int, gap: float, internal_width: float) -> float:
+    return (fixed_steel_strips_weight +
+            fix_plastic_strips_weight +
             number_strips * strip_onlay(gap - 1) * 2 +
             (fixed_balk(internal_width) + wedge(internal_width)) * 4)
 
@@ -197,25 +196,21 @@ def calc_external_width(internal_width: float, is_small_screen: bool) -> float:
     return internal_width + 2 * calc_thickness_sidewall(is_small_screen)
 
 
-# Масса подвижной решетки.
-def moving_grid(number_strips: int, thick_plastic: float,
-                steel_steps: int, plastic_steps: int,
-                moving_plate_thickness: float,
+# Масса подвижной решетки
+def moving_grid(moving_steel_strips_weight: float,
+                moving_plastic_strips_weight: float,
                 internal_width: float) -> float:
-    return (number_strips *
-            moving_steel_strip(steel_steps, moving_plate_thickness) +
-            number_strips *
-            moving_plastic_strip(plastic_steps, thick_plastic) +
+    return (moving_steel_strips_weight + moving_plastic_strips_weight +
             (moving_balk(internal_width) + wedge(internal_width)) * 4)
 
 
-# Корректирующая добавка.
+# Корректирующая добавка
 def correct(external_width: float, ejection_height: float) -> float:
     return (9.9097e-6 * external_width * ejection_height +
             0.18252 * external_width - 0.06067 * ejection_height)
 
 
-# Укрупненный расчет длины пластиковых ламелей.
+# Укрупненный расчет длины пластиковых ламелей
 def calc_length_plastic(short_ejection_height: float,
                         is_small_screen: bool) -> float:
     if is_small_screen:
@@ -226,10 +221,16 @@ def calc_length_plastic(short_ejection_height: float,
             length_over_cover)
 
 
+def add_to_sheet(sheet_weight: Dict[float, float], sheet: float,
+                 value: float) -> None:
+    sheet_weight[sheet] = value + (sheet_weight.get(sheet) or 0)
+
+
 def calc_step_screen(
         oriental_ext_width: float, ejection_height: float,
         moving_plate_thickness: float, fixed_plate_thickness: float,
-        gap: float, depth_channel: float, is_small_screen: bool) -> StepScreen:
+        gap: float, depth_channel: float, is_small_screen: bool,
+        only_steel_strips: bool) -> StepScreen:
     parameters_plates = plates.calc_parameters_plates(
         thickness_mov_steel=moving_plate_thickness,
         thickness_fix_steel=fixed_plate_thickness,
@@ -239,41 +240,77 @@ def calc_step_screen(
     internal_width = parameters_plates.width
     external_width = calc_external_width(internal_width, is_small_screen)
     short_ejection_height = ejection_height - depth_channel
-    steel_steps = number_steps(depth_channel)
-    plastic_steps = (number_steps(ejection_height) -
-                     steel_steps - 1)  # почему минус один??
-    steel_strips_height = steel_steps * STEP_STAIR + FIRST_STAIR
+
+    steel_sheet_weight: Dict[float, float] = {}
+    plastic_sheet_weight: Dict[float, float] = {}
+
+    if only_steel_strips:
+        steel_steps = number_steps(ejection_height) - 1
+        moving_plastic_strips_weight = 0
+        fix_plastic_strips_weight = 0
+    else:
+        steel_steps = number_steps(depth_channel)
+        plastic_steps = (number_steps(ejection_height) - 1 - steel_steps)
+        moving_plastic_strips_weight = parameters_plates.number_mov_plates * \
+            moving_plastic_strip(plastic_steps,
+                                 parameters_plates.thickness_mov_plastic)
+        fix_plastic_strips_weight = parameters_plates.number_fix_plates * \
+            fix_plastic_strip(plastic_steps,
+                              parameters_plates.thickness_fix_plastic)
+
+    moving_steel_strips_weight = parameters_plates.number_mov_plates * \
+        moving_steel_strip(steel_steps, moving_plate_thickness)
+
+    fixed_steel_strips_weight = parameters_plates.number_fix_plates * \
+        fixed_steel_strip(steel_steps, fixed_plate_thickness)
+
     moving_weight = (2 * connecting_wall(ejection_height) +
-                     moving_grid(parameters_plates.number_mov_plates,
-                                 parameters_plates.thickness_mov_plastic,
-                                 steel_steps,
-                                 plastic_steps, moving_plate_thickness,
-                                 internal_width))
+                     moving_grid(moving_steel_strips_weight,
+                                 moving_plastic_strips_weight, internal_width))
+
+    # Масса обеих опор (TODO: возможно не учтен раскос)
+    support_weight = 2 * stand(short_ejection_height)
+
+    # Вест стальных листов (пластины и опоры)
+    add_to_sheet(steel_sheet_weight, moving_plate_thickness,
+                 moving_steel_strips_weight)
+    add_to_sheet(steel_sheet_weight, fixed_plate_thickness,
+                 fixed_steel_strips_weight)
+    add_to_sheet(steel_sheet_weight, SHEET_SUPPORT, support_weight)
+
+    # Вес пластиковых листов (пластины)
+    add_to_sheet(plastic_sheet_weight, parameters_plates.thickness_mov_plastic,
+                 moving_plastic_strips_weight)
+    add_to_sheet(plastic_sheet_weight, parameters_plates.thickness_fix_plastic,
+                 fix_plastic_strips_weight)
+
     weight = (
         moving_weight +
-        sidewall(ejection_height) * 2 + buckle(internal_width) +
+        2 * sidewall(ejection_height) + buckle(internal_width) +
         back_buckle(internal_width) + bottom_buckle(internal_width) +
-        shaft_motor(internal_width) + bracket() * 2 +
+        shaft_motor(internal_width) + 2 * bracket() +
         springboard(internal_width) + spraying(internal_width) +
         slide_ways(internal_width) +
-        stand(short_ejection_height) * 2 +
-        triangle() * 2 + cranck() * 2 +
-        shoulder() * 2 + short_rod() * 2 +
-        long_rod(ejection_height) * 2 + back_cover(internal_width) +
-        slide_cover(short_ejection_height) * 2 + bottom_cover(internal_width) +
+        support_weight +
+        2 * triangle() + 2 * cranck() +
+        2 * shoulder() + 2 * short_rod() +
+        2 * long_rod(ejection_height) + back_cover(internal_width) +
+        2 * slide_cover(short_ejection_height) + bottom_cover(internal_width) +
         top_cover(internal_width, short_ejection_height) +
-        fixed_grid(parameters_plates.number_fix_plates,
-                   parameters_plates.thickness_fix_plastic, steel_steps,
-                   plastic_steps, gap, fixed_plate_thickness, internal_width) +
+        fixed_grid(fixed_steel_strips_weight, fix_plastic_strips_weight,
+                   parameters_plates.number_fix_plates, gap, internal_width) +
         correct(external_width, ejection_height))
+
     length_plastic = calc_length_plastic(short_ejection_height,
                                          is_small_screen)
+
     return StepScreen(
         weight=weight,
         external_width=external_width,
         internal_width=internal_width,
         ejection_height=ejection_height,
-        steel_strips_height=steel_strips_height,
         parameters_plates=parameters_plates,
         moving_weight=moving_weight,
-        length_plastic=length_plastic)
+        length_plastic=length_plastic,
+        steel_sheet_weight=steel_sheet_weight,
+        plastic_sheet_weight=plastic_sheet_weight)

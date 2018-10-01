@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'gui.ui'
 #
-# Created by: PyQt5 UI code generator 5.9
+# Created by: PyQt5 UI code generator 5.10.1
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -63,6 +63,9 @@ class Ui_Dialog(object):
         self.rad_is_wide_width.setObjectName("rad_is_wide_width")
         self.verticalLayout_2.addWidget(self.rad_is_wide_width)
         self.verticalLayout.addWidget(self.groupBox)
+        self.chk_only_steel_strips = QtWidgets.QCheckBox(Dialog)
+        self.chk_only_steel_strips.setObjectName("chk_only_steel_strips")
+        self.verticalLayout.addWidget(self.chk_only_steel_strips)
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout.addItem(spacerItem)
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
@@ -96,5 +99,6 @@ class Ui_Dialog(object):
         self.label_2.setText(_translate("Dialog", "Прозор, мм"))
         self.rad_is_standard_width.setText(_translate("Dialog", "Стандартная ширина"))
         self.rad_is_wide_width.setText(_translate("Dialog", "Максимальная ширина"))
+        self.chk_only_steel_strips.setText(_translate("Dialog", "Только стальные ламели"))
         self.btn_run.setText(_translate("Dialog", "Выполнить"))
 

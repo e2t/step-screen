@@ -10,7 +10,9 @@ def generic_table_powers() -> None:
         row = [f'{width_size}xx']
         for height_size in main.HEIGHTS:
             ejection_height = main.HEIGHTS[height_size]
-            power_drive = main.select_max_power(width_size, ejection_height)
+            # Для решеток с пластиковыми ламелями
+            power_drive = main.select_max_power(width_size, ejection_height,
+                                                False)
             row.append(str(power_drive))
         table.add_row(row)
     print(f'Мощности приводов ступенчатых решеток, кВт ({datetime.now()})')

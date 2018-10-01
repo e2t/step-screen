@@ -1,8 +1,8 @@
-import sys
-sys.path.append('..')
+﻿import sys
+sys.path.append(f'{sys.path[0]}/..')
 import math
 from typing import NamedTuple, Tuple, Dict
-from dry.core import nearest_even
+from Dry.core import nearest_even
 
 
 class ParametersPlates(NamedTuple):
@@ -43,8 +43,8 @@ UNEQUAL_THICKNESS_PLASTIC: Dict[float, Tuple[float, float]] = {
     22: (10, 12)
 }
 
-# Минимальное расстояние между наружной поверхностью фланца и неподвижной
-# пластиковой пластиной.
+# Минимальное расстояние между наружной поверхностью фланца и крайней
+# неподвижной пластиной.
 DISTANCE_TO_FLANGE = 12
 
 
@@ -82,6 +82,9 @@ def calc_parameters_plates(
                    thickness_fix_plastic) / 2
 
     # Внутренняя ширина решетки.
+    # ВНИМАНИЕ: Фактическая ширина решетки не меняется для РСК с только
+    # стальными ламелями для обеспечения совместимости, а разница в зазорах
+    # между крайними пластинами и накладкой остается в пределах допустимого.
     width = (step_plates * (number_fix_plates - 1) +
              thickness_fix_plastic + 2 * DISTANCE_TO_FLANGE)
 
