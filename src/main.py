@@ -161,8 +161,12 @@ class MainWindow(BaseMainWindow, gui.Ui_Dialog):
                 depth_channel=depth_channel,
                 is_small_screen=is_small_screen,
                 only_steel_strips=only_steel_strips)
-            power_drive = select_max_power(width_size, ejection_height,
-                                           only_steel_strips)
+            if gap < min(STEEL_GAPS):
+                power_drive = calc_power_drive(screen.moving_weight,
+                                               is_small_screen)
+            else:
+                power_drive = select_max_power(width_size, ejection_height,
+                                               only_steel_strips)
             mark_screen = width_size + height_size
             self.output_results(screen, power_drive, mark_screen, gap,
                                 thickness_size, depth_channel, is_small_screen,
