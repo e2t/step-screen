@@ -102,11 +102,11 @@ ENV/
 
 # My
 .vscode/
-build-msi.bat
-*.txt
 *.pas
 *.o
 *.a
 *.geany
 *.c
 *.h
+*.insyncdl
+output/
