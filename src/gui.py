@@ -5,7 +5,7 @@ from tkinter.ttk import (Frame, Label, Entry, Button, Combobox, Checkbutton)
 from tkinter.scrolledtext import ScrolledText
 from stepscreen import (StepScreen, SCREEN_WIDTH_SERIES, SCREEN_HEIGHT_SERIES, InputData,
                         THICKNESS_STEEL, STEEL_GAPS)
-from dry.allgui import MyFrame, fstr, to_mm, to_kw
+from dry.allgui import MyFrame, fstr, to_mm, to_kw, handle_ctrl_shortcut
 from dry.allcalc import InputDataError
 locale.setlocale(locale.LC_NUMERIC, '')
 
@@ -21,7 +21,7 @@ class MainForm(MyFrame):
 
     def __init__(self, root: Tk) -> None:
         """Конструктор формы."""
-        root.title(f'Расчет ступенчатых решеток (v2.0.0)')
+        root.title(f'Расчет ступенчатых решеток (v2.0.1)')
         super().__init__(root)
 
         cmb_w = 5
@@ -30,46 +30,42 @@ class MainForm(MyFrame):
         subframe.grid(row=0, column=0, sticky=W + N)
 
         row = 0
-        Label(subframe, text='Ширина решетки:').grid(row=row, column=0, sticky=W)
+        Label(subframe, text='Типоразмер по ширине:').grid(row=row, column=0, sticky=W)
         self._cmb_screen_ws = Combobox(subframe, state='readonly', width=cmb_w,
                                        values=self.SCREEN_WIDTH_CHOICES)
         self._cmb_screen_ws.grid(row=row, column=1)
         self._cmb_screen_ws.current(0)
 
         row += 1
-        Label(subframe, text='Высота решетки:').grid(row=row, column=0, sticky=W)
+        Label(subframe, text='Типоразмер по высоте:').grid(row=row, column=0, sticky=W)
         self._cmb_screen_hs = Combobox(subframe, state='readonly', width=cmb_w,
                                        values=self.SCREEN_HEIGHT_CHOICES)
         self._cmb_screen_hs.grid(row=row, column=1)
         self._cmb_screen_hs.current(0)
 
         row += 1
-        Label(subframe, text='Прозор:').grid(row=row, column=0, sticky=W)
+        Label(subframe, text='Прозор (мм):').grid(row=row, column=0, sticky=W)
         self._cmb_gap = Combobox(subframe, width=1, values=self.GAP_CHOICES)
         self._cmb_gap.grid(row=row, column=1, sticky=W + E)
         self._cmb_gap.current(0)
-        Label(subframe, text='мм').grid(row=row, column=2, sticky=W)
 
         row += 1
-        Label(subframe, text='Толщина ламелей:').grid(row=row, column=0, sticky=W)
+        Label(subframe, text='Толщина ламелей (мм):').grid(row=row, column=0, sticky=W)
         self._cmb_thickness = Combobox(subframe, state='readonly', width=1,
                                        values=self.THICKNESS_CHOICES)
         self._cmb_thickness.grid(row=row, column=1, sticky=W + E)
         self._cmb_thickness.current(0)
-        Label(subframe, text='мм').grid(row=row, column=2, sticky=W)
 
         row += 1
-        Label(subframe, text='Глубина канала:').grid(row=row, column=0,
-                                                     sticky=W)
+        Label(subframe, text='Глубина канала (мм):').grid(row=row, column=0, sticky=W)
         self._ent_channel_h = Entry(subframe, width=1)
         self._ent_channel_h.grid(row=row, column=1, sticky=W + E)
-        Label(subframe, text='мм').grid(row=row, column=2, sticky=W)
 
         row += 1
         self._var_steel_only = BooleanVar()
         _chk_steel_only = Checkbutton(subframe, text='Только стальные ламели',
                                       var=self._var_steel_only)
-        _chk_steel_only.grid(row=row, column=0, sticky=W, columnspan=3)
+        _chk_steel_only.grid(row=row, column=0, sticky=W, columnspan=2)
 
         self._memo = ScrolledText(self, state=DISABLED, height=15, width=45)
         self._memo.grid(row=0, column=1, sticky=W + E + N + S)
@@ -77,20 +73,12 @@ class MainForm(MyFrame):
         btn_frame = Frame(self)
         btn_frame.grid(row=1, column=1, sticky=E)
 
-        Button(btn_frame, text='Расчет', command=self._run).grid(row=0, column=0)
+        Button(btn_frame, text='Рассчитать', command=self._run).grid(row=0, column=0)
         self.bind_all('<Return>', self._on_press_enter)
 
-        self._add_pad_to_all_widgets(self)
+        self._add_pad_to_all_widgets()
         self._focus_first_entry(self)
-
-    # def _copy_output_to_clipboard(self) -> None:
-    #     if self._memo.tag_ranges('sel'):
-    #         text = self._memo.selection_get()
-    #     else:
-    #         text = self._memo.get(1.0, END)
-    #     self.clipboard_clear()
-    #     self.clipboard_append(text)
-    #     self._memo.focus_force()
+        root.bind_all('<Key>', handle_ctrl_shortcut, '+')
 
     def _output(self, text: str) -> None:
         self._memo.config(state=NORMAL)
@@ -131,7 +119,7 @@ class MainForm(MyFrame):
             '',
             'Ширина наружная B = {} мм'.format(fstr(to_mm(scr.outer_screen_width))),
             'Ширина внутренняя A = {} мм'.format(fstr(to_mm(scr.inner_screen_width))),
-            'Ширина сброса {} мм'.format(fstr(to_mm(scr.discharge_width))),
+            'Ширина сброса G = {} мм'.format(fstr(to_mm(scr.discharge_width))),
             'Высота сброса до дна H1 = {} мм'.format(fstr(to_mm(scr.discharge_full_height),
                                                           '%.0f')),
             'Высота сброса до пола H4 = {} мм'.format(fstr(to_mm(scr.discharge_height), '%.0f')),

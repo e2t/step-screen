@@ -24,8 +24,8 @@ def _create_tables():
 
     max_gap = STEEL_GAPS[-1]
     min_gap = STEEL_GAPS[0]
-    fixed_steel_s0, moving_steel_s0 = THICKNESS_STEEL[0]
-    fixed_steel_s1, moving_steel_s1 = THICKNESS_STEEL[-1]
+    moving_steel_s0, fixed_steel_s0 = THICKNESS_STEEL[0]
+    moving_steel_s1, fixed_steel_s1 = THICKNESS_STEEL[-1]
     discharge_height = 1.0
 
     paragraph = document.add_paragraph()
@@ -73,5 +73,41 @@ def _create_tables():
     document.save('Сводная таблица параметров РСК ({}).docx'.format(date.today()))
 
 
+GAP_VAR = 'gap'
+SS_VAR = 'ss'
+
+
+def _print_power_and_mass(screen: StepScreen):
+    desc = screen.description
+    if screen.drive_unit is not None:
+        power = fstr(to_kw(screen.drive_unit.power))
+    else:
+        power = '...'
+    mass = screen.full_mass
+    print(f'    Powers.Add key({GAP_VAR}, {SS_VAR}, "{desc}"), "{power}"\n'
+          f'    Weights.Add key({GAP_VAR}, {SS_VAR}, "{desc}"), "{mass:.0f}"')
+
+
+def _create_sheet():
+    for gap in STEEL_GAPS:
+        for thickness_pair in THICKNESS_STEEL:
+            moving_steel_s, fixed_steel_s = thickness_pair
+            gap_f = '{:.0f}'.format(to_mm(gap))
+            fix_f = '{:g}'.format(to_mm(fixed_steel_s))
+            mov_f = '{:g}'.format(to_mm(moving_steel_s))
+            print(f'Private Sub Init_Gap{gap_f}_{fix_f}{mov_f}()\n'
+                  f'    Const {GAP_VAR} as String = "{gap_f}"\n'
+                  f'    Const {SS_VAR} as String = "{fix_f}/{mov_f}"\n')
+            for ws in SCREEN_WIDTH_SERIES:
+                for hs in SCREEN_HEIGHT_SERIES:
+                    screen = StepScreen(InputData(
+                        screen_ws=ws, screen_hs=hs, main_steel_gap=gap,
+                        fixed_steel_s=fixed_steel_s, moving_steel_s=moving_steel_s,
+                        channel_height=DISCHARGE_FULL_HEIGHT[hs] - 1.0,
+                        have_plastic_part=True))
+                    _print_power_and_mass(screen)
+            print('End Sub\n')
+
+
 if __name__ == '__main__':
-    _create_tables()
+    _create_sheet()

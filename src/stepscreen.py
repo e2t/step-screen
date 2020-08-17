@@ -162,6 +162,16 @@ class StepScreen:
         return self._inner_screen_width
 
     @property
+    def description(self) -> str:
+        """Обозначение решетки."""
+        return self._description
+
+    @property
+    def gap(self) -> Distance:
+        """Прозор стальных пластин."""
+        return self._input_data.main_steel_gap
+
+    @property
     def outer_screen_width(self) -> Distance:
         """Наружная ширина решетки."""
         return self._outer_screen_width
@@ -339,6 +349,12 @@ class StepScreen:
         self._min_torque = self._calc_min_torque()
         self._drive_unit = self._calc_drive_unit()
         self._full_mass = self._calc_full_mass()
+
+        self._description = self._create_description()
+
+    def _create_description(self) -> str:
+        """Создание обозначения решетки (XXYY)."""
+        return '{:02d}{:02d}'.format(self._input_data.screen_ws, self._input_data.screen_hs)
 
     def _calc_outer_screen_width(self) -> Distance:
         """Расчет наружной ширины решетки по типоразмеру ширины."""
