@@ -1,14 +1,14 @@
 """Расчет параметров ступенчатой решетки конструкции HUBER."""
 from typing import NamedTuple, Tuple, Optional
-from math import radians, sin, cos
+from math import radians, sin, cos, ceil
 from mypy_extensions import TypedDict
 from dry.allgui import to_mm, from_mm
 from dry.allcalc import (
     WidthSerie, HeightSerie, Mass, Distance, Power, Angle, Torque, GRAV_ACC, InputDataError)
 
 
-SCREEN_WIDTH_SERIES = range(4, 23)
-SCREEN_HEIGHT_SERIES = range(6, 33, 3)
+SCREEN_WIDTH_SERIES = [WidthSerie(i) for i in range(4, 23)]
+SCREEN_HEIGHT_SERIES = [HeightSerie(i) for i in range(6, 33, 3)]
 
 # Толщина стальных пластин: 0 - подвижные (тоньше), 1 - неподвижные (толще)
 THICKNESS_STEEL = ((Distance(0.003), Distance(0.003)),
@@ -301,6 +301,11 @@ class StepScreen:
         """Минимальный крутящий момент."""
         return self._min_torque
 
+    @property
+    def equation_file(self) -> str:
+        """Файл уравнений."""
+        return self._equation_file
+
     def __init__(self, input_data: InputData):
         """Конструктор и одновременно расчет решетки."""
         self._input_data = input_data
@@ -323,6 +328,9 @@ class StepScreen:
             self._moving_plastic_s, self._fixed_plastic_s = self._calc_plastic_s()
             self._approximate_plastic_s = self._calc_approximate_plastic_s()
             self._side_plastic_gap = self._calc_side_plastic_gap()
+        else:
+            self._moving_plastic_s = None
+            self._fixed_plastic_s = None
         self._min_side_gap = self._calc_min_side_gap()
 
         self._screen_height = self._calc_screen_height()
@@ -351,6 +359,7 @@ class StepScreen:
         self._full_mass = self._calc_full_mass()
 
         self._description = self._create_description()
+        self._equation_file = self._create_equation_file()
 
     def _create_description(self) -> str:
         """Создание обозначения решетки (XXYY)."""
@@ -461,10 +470,13 @@ class StepScreen:
         return Distance(0.1 * self._input_data.screen_ws - 0.062)
 
     def _calc_min_torque(self) -> Torque:
-        """Расчет крутящего момента привода."""
-        safety_factor = 1.5
-        payload = Mass(200)
-        return Torque((self._moving_mass + payload) * GRAV_ACC * LEVER_ARM * safety_factor)
+        """Расчет крутящего момента привода.
+
+        До ноября 2020, задача Песина: (M + 200 кг) * 1.5
+        Сейчас: M * 2.3
+        """
+        unaccounted_load = 2.3  # Коэффициент неучтенных нагрузок.
+        return Torque(self._moving_mass * unaccounted_load * GRAV_ACC * LEVER_ARM)
 
     def _calc_drive_unit(self) -> Optional[DriveUnit]:
         """Подбор привода решетки."""
@@ -810,3 +822,77 @@ class StepScreen:
             weights['full_steel_fixed_plate'] = self._calc_mass_full_steel_fixed_plate()
             weights['full_steel_moving_plate'] = self._calc_mass_full_steel_moving_plate()
         return weights
+
+    def _create_equation_file(self) -> str:
+        # Болты крепления пластин: примерное расстояние от боковины до крайнего болта
+        _pmb_approx_start = Distance(0.04)
+        # Болты крепления пластин: максимальный шаг болтов
+        _pmb_max_step = Distance(0.284)
+        # Болты крепления пластин: округление шага болтов
+        _pmb_round_base = Distance(0.01)
+        # Болты крепления пластин: примерное расстояние между крайними болтами
+        _pmb_approx_work_width = Distance(self._inner_screen_width - 2 * _pmb_approx_start)
+        # Болты крепления пластин: дробное количестов шагов между болтами
+        _pmb_float_number = _pmb_approx_work_width / _pmb_max_step
+        # Болты крепления пластин: количестов шагов между болтами, округленное в меньшую сторону
+        _pmb_int_number = int(_pmb_float_number)
+        # Болты крепления пластин: количество болтов
+        if _pmb_float_number > _pmb_int_number:
+            pmb_number = _pmb_int_number + 2
+        else:
+            pmb_number = _pmb_int_number + 1
+        # Болты крепления пластин: шаг между болтами
+        pmb_step = Distance(round(_pmb_approx_work_width / (pmb_number - 1) / _pmb_round_base)
+                            * _pmb_round_base)
+        # Болты крепления пластин: расстояние от боковины до крайнего болта
+        pmb_start = Distance((self._inner_screen_width - pmb_step * (pmb_number - 1)) / 2)
+
+        # Болты сброса: максимальный шаг между болтами
+        _dpb_max_step = Distance(0.25)
+        # Болты сброса: примерное расстояние между крайними болтами
+        _dpb_max_size = Distance(self._inner_screen_width - 0.045)
+        # Болты сброса: количество болтов
+        dpb_count = ceil(_dpb_max_size / _dpb_max_step) + 1
+        # Болты сброса: шаг между болтами
+        dpb_step = Distance(round(_dpb_max_size / (dpb_count - 1), 3))
+        # Болты сброса: расстояние между крайними болтами
+        dpb_max_size = Distance((dpb_count - 1) * dpb_step)
+        # Крышка сброса: расстояние между крайними болтами
+        _dpc_max_size = Distance(self._inner_screen_width - 0.103)
+        # Крышка сброса: количество болтов (в длину)
+        dpc_count = ceil(_dpc_max_size / 0.55) + 1
+        # Крышка сброса: шаг между болтами (в длину)
+        dpc_step = Distance(_dpc_max_size / (dpc_count - 1))
+
+        result = [f'''\
+"inner_width" = {to_mm(self._inner_screen_width):g}mm  'Внутренняя ширина решетки
+"thickness_fixed" = {to_mm(self._input_data.fixed_steel_s):g}mm  'Толщина стальной неподвижной пластины
+"thickness_moving" = {to_mm(self._input_data.moving_steel_s):g}mm  'Толщина стальной подвижной пластины
+"main_gap" = {to_mm(self._input_data.main_steel_gap):g}mm  'Прозор между пластинами
+"teeth_number" = {self._full_teeth_number}  'Количество зубьев пластин (для массива)''']
+
+        if self._fixed_plastic_s is not None:
+            result.append(f'''\
+"plastic_fixed" = {to_mm(self._fixed_plastic_s):g}mm  'Толщина пластиковой неподвижной пластины''')
+
+        if self._moving_plastic_s is not None:
+            result.append(f'''\
+"plastic_moving" = {to_mm(self._moving_plastic_s):g}mm  'Толщина пластиковой подвижной пластины''')
+
+        result.append(f'''\
+"step" = {to_mm(self._plates_step):g}mm  'Шаг между пластинами одного полотна
+"number_fixed" = {self._fixed_plates_number}  'Кол-во неподвижных пластин
+"number_moving" = {self._moving_plates_number}  'Кол-во подвижных пластин
+"side_gap" = {to_mm(self._side_steel_gap):g}mm  'Зазор между боковиной и крайней пластиной
+"start_fixed" = {to_mm(self._start_fixed):g}mm  'Расстояние от боковины до середины неподвижной пластины
+"start_moving" = {to_mm(self._start_moving):g}mm  'Расстояние от боковины до середины подвижной пластины
+"gap_limiter_thickness" = {to_mm(self._limiter_s):g}mm  'Толщина дистанционера пластин
+"pmb_number" = {pmb_number}  'Болты крепления пластин: количество болтов
+"pmb_step" = {to_mm(pmb_step):g}mm  'Болты крепления пластин: шаг между болтами
+"pmb_start" = {to_mm(pmb_start):g}mm  'Болты крепления пластин: расстояние от боковины до крайнего болта
+"dpb_max_size" = {to_mm(dpb_max_size):g}mm  'Болты сброса: расстояние между крайними болтами
+"dpb_count" = {dpb_count}  'Болты сброса: количество болтов
+"dpb_step" = {to_mm(dpb_step):g}mm  'Болты сброса: шаг между болтами
+"dpc_step" = {to_mm(dpc_step):g}mm  'Крышка сброса: шаг между болтами (в длину)
+"dpc_count" = {dpc_count}  'Крышка сброса: количество болтов (в длину)''')
+        return '\n'.join(result)

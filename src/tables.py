@@ -4,10 +4,11 @@ from datetime import date
 from docx import Document
 from docx.shared import Cm
 from docx.enum.section import WD_ORIENT
+from dry.allgui import fstr, to_kw, to_mm
+from dry.allcalc import Distance
 from stepscreen import (
     StepScreen, SCREEN_WIDTH_SERIES, SCREEN_HEIGHT_SERIES, InputData, START_DISCHARGE_FULL_HEIGHT,
     DIFF_TEETH_SERIES, TEETH_STEP_Y, THICKNESS_STEEL, STEEL_GAPS)
-from dry.allgui import fstr, to_kw, to_mm
 locale.setlocale(locale.LC_NUMERIC, '')
 
 
@@ -15,7 +16,7 @@ DISCHARGE_FULL_HEIGHT = {hs: START_DISCHARGE_FULL_HEIGHT + DIFF_TEETH_SERIES[hs]
                          for hs in SCREEN_HEIGHT_SERIES}
 
 
-def _create_tables():
+def _create_tables() -> None:
     document = Document()
     section = document.sections[-1]
     section.orientation = WD_ORIENT.LANDSCAPE
@@ -43,22 +44,24 @@ def _create_tables():
 
     table = document.add_table(
         rows=len(SCREEN_WIDTH_SERIES) + 1, cols=len(SCREEN_HEIGHT_SERIES) + 1)
-    for i, ws in enumerate(SCREEN_WIDTH_SERIES, start=1):
-        table.cell(i, 0).text = '{}xx'.format(fstr(ws, '%02d'))
-    for i, hs in enumerate(SCREEN_HEIGHT_SERIES, start=1):
-        table.cell(0, i).text = 'xx{}'.format(fstr(hs, '%02d'))
-    for row, ws in enumerate(SCREEN_WIDTH_SERIES, start=1):
-        for col, hs in enumerate(SCREEN_HEIGHT_SERIES, start=1):
+    for i, width_serie in enumerate(SCREEN_WIDTH_SERIES, start=1):
+        table.cell(i, 0).text = '{}xx'.format(fstr(width_serie, '%02d'))
+    for i, height_serie in enumerate(SCREEN_HEIGHT_SERIES, start=1):
+        table.cell(0, i).text = 'xx{}'.format(fstr(height_serie, '%02d'))
+    for row, width_serie in enumerate(SCREEN_WIDTH_SERIES, start=1):
+        for col, height_serie in enumerate(SCREEN_HEIGHT_SERIES, start=1):
             screen = (
                 StepScreen(InputData(
-                    screen_ws=ws, screen_hs=hs, main_steel_gap=max_gap,
+                    screen_ws=width_serie, screen_hs=height_serie, main_steel_gap=max_gap,
                     fixed_steel_s=fixed_steel_s1, moving_steel_s=moving_steel_s1,
-                    channel_height=DISCHARGE_FULL_HEIGHT[hs] - discharge_height,
+                    channel_height=Distance(
+                        DISCHARGE_FULL_HEIGHT[height_serie] - discharge_height),
                     have_plastic_part=True)),
                 StepScreen(InputData(
-                    screen_ws=ws, screen_hs=hs, main_steel_gap=min_gap,
+                    screen_ws=width_serie, screen_hs=height_serie, main_steel_gap=min_gap,
                     fixed_steel_s=fixed_steel_s0, moving_steel_s=moving_steel_s0,
-                    channel_height=DISCHARGE_FULL_HEIGHT[hs] - discharge_height,
+                    channel_height=Distance(
+                        DISCHARGE_FULL_HEIGHT[height_serie] - discharge_height),
                     have_plastic_part=True)),)
             text = '{}÷{} кг\n{}÷{} кВт'.format(
                 fstr(screen[0].full_mass, '%.0f'),
@@ -77,7 +80,7 @@ GAP_VAR = 'gap'
 SS_VAR = 'ss'
 
 
-def _print_power_and_mass(screen: StepScreen):
+def _print_power_and_mass(screen: StepScreen) -> None:
     desc = screen.description
     if screen.drive_unit is not None:
         power = fstr(to_kw(screen.drive_unit.power))
@@ -88,7 +91,7 @@ def _print_power_and_mass(screen: StepScreen):
           f'    Weights.Add key({GAP_VAR}, {SS_VAR}, "{desc}"), "{mass:.0f}"')
 
 
-def _create_sheet():
+def _create_sheet() -> None:
     for gap in STEEL_GAPS:
         for thickness_pair in THICKNESS_STEEL:
             moving_steel_s, fixed_steel_s = thickness_pair
@@ -98,16 +101,17 @@ def _create_sheet():
             print(f'Private Sub Init_Gap{gap_f}_{fix_f}{mov_f}()\n'
                   f'    Const {GAP_VAR} as String = "{gap_f}"\n'
                   f'    Const {SS_VAR} as String = "{fix_f}/{mov_f}"\n')
-            for ws in SCREEN_WIDTH_SERIES:
-                for hs in SCREEN_HEIGHT_SERIES:
+            for width_serie in SCREEN_WIDTH_SERIES:
+                for height_serie in SCREEN_HEIGHT_SERIES:
                     screen = StepScreen(InputData(
-                        screen_ws=ws, screen_hs=hs, main_steel_gap=gap,
+                        screen_ws=width_serie, screen_hs=height_serie, main_steel_gap=gap,
                         fixed_steel_s=fixed_steel_s, moving_steel_s=moving_steel_s,
-                        channel_height=DISCHARGE_FULL_HEIGHT[hs] - 1.0,
+                        channel_height=Distance(DISCHARGE_FULL_HEIGHT[height_serie] - 1.0),
                         have_plastic_part=True))
                     _print_power_and_mass(screen)
             print('End Sub\n')
 
 
 if __name__ == '__main__':
+    _create_tables()
     _create_sheet()

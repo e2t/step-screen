@@ -3,10 +3,10 @@ import locale
 from tkinter import (Tk, W, E, N, S, NORMAL, DISABLED, END, Event, BooleanVar)
 from tkinter.ttk import (Frame, Label, Entry, Button, Combobox, Checkbutton)
 from tkinter.scrolledtext import ScrolledText
-from stepscreen import (StepScreen, SCREEN_WIDTH_SERIES, SCREEN_HEIGHT_SERIES, InputData,
-                        THICKNESS_STEEL, STEEL_GAPS)
 from dry.allgui import MyFrame, fstr, to_mm, to_kw, handle_ctrl_shortcut
 from dry.allcalc import InputDataError
+from stepscreen import (StepScreen, SCREEN_WIDTH_SERIES, SCREEN_HEIGHT_SERIES, InputData,
+                        THICKNESS_STEEL, STEEL_GAPS)
 locale.setlocale(locale.LC_NUMERIC, '')
 
 
@@ -21,7 +21,8 @@ class MainForm(MyFrame):
 
     def __init__(self, root: Tk) -> None:
         """Конструктор формы."""
-        root.title(f'Расчет ступенчатых решеток (v2.0.1)')
+        root.title('Расчет ступенчатых решеток v2.1.0')
+        # Unreleased: Добавлен файл уравнений.
         super().__init__(root)
 
         cmb_w = 5
@@ -112,6 +113,9 @@ class MainForm(MyFrame):
             return
 
         output = [
+            'РСК {0}, прозор {3} ({1}/{2}), глубина {4} мм'.format(
+                scr.description, fstr(to_mm(scr.moving_steel_s)), fstr(to_mm(scr.fixed_steel_s)),
+                fstr(to_mm(scr.gap)), fstr(to_mm(channel_height))),
             'Масса решетки {} кг{}'.format(fstr(scr.full_mass, '%.0f'),
                                            ' (без привода)' if scr.drive_unit is None else ''),
             'Привод {} кВт'.format(fstr(to_kw(scr.drive_unit.power))
@@ -161,7 +165,12 @@ class MainForm(MyFrame):
                     fstr(to_mm(scr.sum_plastic_s[0]))))
         output += (
             'Вес подвижных частей {} кг'.format(fstr(scr.moving_mass, '%.0f')),
-            'Крутяший момент {} Нм'.format(fstr(scr.min_torque, '%.0f')))
+            'Крутяший момент {} Нм'.format(fstr(scr.min_torque, '%.0f')),
+            '',
+            '====== Файл уравнений ======',
+            '',
+            scr.equation_file,
+            '')
         self._output('\n'.join(output))
 
     def _on_press_enter(self, _: Event) -> None:
