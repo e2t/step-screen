@@ -2,12 +2,12 @@
 from typing import NamedTuple, Tuple, Optional
 from math import radians, sin, cos, ceil
 from mypy_extensions import TypedDict
-from dry.allgui import to_mm, from_mm
-from dry.allcalc import (
+from Dry.allgui import to_mm, from_mm
+from Dry.allcalc import (
     WidthSerie, HeightSerie, Mass, Distance, Power, Angle, Torque, GRAV_ACC, InputDataError)
 
 
-SCREEN_WIDTH_SERIES = [WidthSerie(i) for i in range(4, 23)]
+SCREEN_WIDTH_SERIES = [WidthSerie(i) for i in range(5, 23)]
 SCREEN_HEIGHT_SERIES = [HeightSerie(i) for i in range(6, 33, 3)]
 
 # Толщина стальных пластин: 0 - подвижные (тоньше), 1 - неподвижные (толще)
@@ -67,6 +67,11 @@ class DriveUnit(NamedTuple):
     mass: Mass
     power: Power
     output_torque: Torque
+
+
+DRIVE_UNITS_05XX = (
+    DriveUnit('SK9022.1-80', mass=Mass(49), power=Power(750), output_torque=Torque(586)),
+)
 
 
 DRIVE_UNITS = (
@@ -480,7 +485,14 @@ class StepScreen:
 
     def _calc_drive_unit(self) -> Optional[DriveUnit]:
         """Подбор привода решетки."""
-        for i in DRIVE_UNITS:
+
+        drive_units: Tuple[DriveUnit, ...]
+        if self._input_data.screen_ws <= 5:
+            drive_units = DRIVE_UNITS_05XX
+        else:
+            drive_units = DRIVE_UNITS
+
+        for i in drive_units:
             if i.output_torque >= self._min_torque:
                 return i
         return None

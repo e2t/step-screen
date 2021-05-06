@@ -3,8 +3,8 @@ import locale
 from tkinter import (Tk, W, E, N, S, NORMAL, DISABLED, END, Event, BooleanVar)
 from tkinter.ttk import (Frame, Label, Entry, Button, Combobox, Checkbutton)
 from tkinter.scrolledtext import ScrolledText
-from dry.allgui import MyFrame, fstr, to_mm, to_kw, handle_ctrl_shortcut
-from dry.allcalc import InputDataError
+from Dry.allgui import MyFrame, fstr, to_mm, to_kw, handle_ctrl_shortcut
+from Dry.allcalc import InputDataError
 from stepscreen import (StepScreen, SCREEN_WIDTH_SERIES, SCREEN_HEIGHT_SERIES, InputData,
                         THICKNESS_STEEL, STEEL_GAPS)
 locale.setlocale(locale.LC_NUMERIC, '')
@@ -21,8 +21,7 @@ class MainForm(MyFrame):
 
     def __init__(self, root: Tk) -> None:
         """Конструктор формы."""
-        root.title('Расчет ступенчатых решеток v2.1.0')
-        # Unreleased: Добавлен файл уравнений.
+        root.title('Расчет ступенчатых решеток v2.2.0')
         super().__init__(root)
 
         cmb_w = 5
@@ -55,7 +54,7 @@ class MainForm(MyFrame):
         self._cmb_thickness = Combobox(subframe, state='readonly', width=1,
                                        values=self.THICKNESS_CHOICES)
         self._cmb_thickness.grid(row=row, column=1, sticky=W + E)
-        self._cmb_thickness.current(0)
+        self._cmb_thickness.current(1)
 
         row += 1
         Label(subframe, text='Глубина канала (мм):').grid(row=row, column=0, sticky=W)

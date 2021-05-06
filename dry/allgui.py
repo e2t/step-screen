@@ -7,7 +7,7 @@ from tkinter.scrolledtext import ScrolledText
 from abc import abstractmethod
 from math import radians
 from functools import partial
-from dry.allcalc import Distance, VolumeFlowRate, Angle, Power
+from Dry.allcalc import Distance, VolumeFlowRate, Angle, Power
 
 
 def convert_str_to_positive_float(text: str) -> float:
@@ -21,6 +21,11 @@ def convert_str_to_positive_float(text: str) -> float:
 def fstr(value: Union[int, float], pattern: str = '%g') -> str:
     """Форматирует число в региональном формате."""
     return locale.format_string(pattern, value, True)
+
+
+def to_mm(meter: Distance) -> Distance:
+    """Конвертирует метры в миллиметры."""
+    return Distance(meter * 1e3)
 
 
 def print_in_disabled_text(memo: Union[Text, ScrolledText], text: str) -> None:
@@ -139,6 +144,10 @@ class MyFrame(Frame):
         if value is not None:
             return Angle(radians(value))  # градусы -> радианы
         return None
+
+    def _get_deg_from_entry(self, entry: Entry) -> Angle:
+        value = self._get_positive_float_from_entry(entry)
+        return Angle(radians(value))  # градусы -> радианы
 
 
 class SortableTreeview(Treeview):

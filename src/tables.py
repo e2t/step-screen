@@ -4,8 +4,8 @@ from datetime import date
 from docx import Document
 from docx.shared import Cm
 from docx.enum.section import WD_ORIENT
-from dry.allgui import fstr, to_kw, to_mm
-from dry.allcalc import Distance
+from Dry.allgui import fstr, to_kw, to_mm
+from Dry.allcalc import Distance
 from stepscreen import (
     StepScreen, SCREEN_WIDTH_SERIES, SCREEN_HEIGHT_SERIES, InputData, START_DISCHARGE_FULL_HEIGHT,
     DIFF_TEETH_SERIES, TEETH_STEP_Y, THICKNESS_STEEL, STEEL_GAPS)
