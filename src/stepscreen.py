@@ -2,9 +2,10 @@
 from typing import NamedTuple, Tuple, Optional
 from math import radians, sin, cos, ceil
 from mypy_extensions import TypedDict
-from Dry.allgui import to_mm, from_mm
+from Dry.allgui import to_mm, from_mm, from_rpm
 from Dry.allcalc import (
-    WidthSerie, HeightSerie, Mass, Distance, Power, Angle, Torque, GRAV_ACC, InputDataError)
+    WidthSerie, HeightSerie, Mass, Distance, Power, Angle, Torque, GRAV_ACC, InputDataError,
+    Rotation)
 
 
 SCREEN_WIDTH_SERIES = [WidthSerie(i) for i in range(5, 23)]
@@ -66,19 +67,27 @@ class DriveUnit(NamedTuple):
     name: str
     mass: Mass
     power: Power
-    output_torque: Torque
+    torque: Torque
+    speed: Rotation
 
 
 DRIVE_UNITS_05XX = (
-    DriveUnit('SK9022.1-80', mass=Mass(49), power=Power(750), output_torque=Torque(586)),
+    DriveUnit('SK9022.1-80LP', mass=Mass(49), power=Power(750), torque=Torque(586),
+              speed=from_rpm(12)),
+    DriveUnit('SK9022.1-90SP', mass=Mass(54), power=Power(1100), torque=Torque(850),
+              speed=from_rpm(12)),
 )
 
 
 DRIVE_UNITS = (
-    DriveUnit('SK32100-80', mass=Mass(67), power=Power(750), output_torque=Torque(423)),
-    DriveUnit('SK32100-90', mass=Mass(73), power=Power(1500), output_torque=Torque(845)),
-    DriveUnit('SK32100-100', mass=Mass(84), power=Power(2200), output_torque=Torque(1004)),
-    DriveUnit('SK9032.1-100', mass=Mass(86), power=Power(2200), output_torque=Torque(1591)),
+    DriveUnit('SK9032.1-80LP', mass=Mass(69), power=Power(750), torque=Torque(562),
+              speed=from_rpm(13)),
+    DriveUnit('SK9032.1-90SP', mass=Mass(73), power=Power(1100), torque=Torque(815),
+              speed=from_rpm(13)),
+    DriveUnit('SK9032.1-90LP', mass=Mass(75), power=Power(1500), torque=Torque(1123),
+              speed=from_rpm(13)),
+    DriveUnit('SK9032.1-100LP', mass=Mass(86), power=Power(2200), torque=Torque(1591),
+              speed=from_rpm(13)),
 )
 
 
@@ -493,7 +502,7 @@ class StepScreen:
             drive_units = DRIVE_UNITS
 
         for i in drive_units:
-            if i.output_torque >= self._min_torque:
+            if i.torque >= self._min_torque:
                 return i
         return None
 

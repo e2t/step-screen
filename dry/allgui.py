@@ -1,13 +1,13 @@
 """Библиотека стандартных графических решений."""
 import locale
-from typing import Union, Optional, Tuple, Sequence
-from tkinter import Text, NORMAL, END, DISABLED, Event
+from typing import Union, Optional, Tuple, Sequence, Any
+from tkinter import Misc, Text, NORMAL, END, DISABLED, Event
 from tkinter.ttk import Widget, Frame, LabelFrame, Entry, Treeview
 from tkinter.scrolledtext import ScrolledText
 from abc import abstractmethod
-from math import radians
+from math import radians, pi
 from functools import partial
-from Dry.allcalc import Distance, VolumeFlowRate, Angle, Power
+from Dry.allcalc import Distance, Rotation, VolumeFlowRate, Angle, Power
 
 
 def convert_str_to_positive_float(text: str) -> float:
@@ -21,11 +21,6 @@ def convert_str_to_positive_float(text: str) -> float:
 def fstr(value: Union[int, float], pattern: str = '%g') -> str:
     """Форматирует число в региональном формате."""
     return locale.format_string(pattern, value, True)
-
-
-def to_mm(meter: Distance) -> Distance:
-    """Конвертирует метры в миллиметры."""
-    return Distance(meter * 1e3)
 
 
 def print_in_disabled_text(memo: Union[Text, ScrolledText], text: str) -> None:
@@ -44,6 +39,8 @@ def format_params(lines: Sequence[Tuple[str, str]]) -> str:
 
 
 def handle_ctrl_shortcut(event: Event) -> None:
+    if not isinstance(event.state, int):
+        return
     shift = (event.state & 0x1) != 0
     ctrl = (event.state & 0x4) != 0
     alt = (event.state & 0x20000) != 0
@@ -158,17 +155,17 @@ class SortableTreeview(Treeview):
                 kwargs['command'] = partial(func, column, False)
         return super().heading(column, **kwargs)
 
-    def _sort(self, column, reverse, data_type, callback):
-        l = [(self.set(k, column), k) for k in self.get_children('')]
-        l.sort(key=lambda t: data_type(t[0]), reverse=reverse)
-        for index, (_, k) in enumerate(l):
+    def _sort(self, column, reverse, data_type, callback) -> None:
+        alist = [(self.set(k, column), k) for k in self.get_children('')]
+        alist.sort(key=lambda t: data_type(t[0]), reverse=reverse)
+        for index, (_, k) in enumerate(alist):
             self.move(k, '', index)
         self.heading(column, command=partial(callback, column, not reverse))
 
-    def _sort_as_num(self, column, reverse):
+    def _sort_as_num(self, column, reverse) -> None:
         self._sort(column, reverse, locale.atof, self._sort_as_num)
 
-    def _sort_as_str(self, column, reverse):
+    def _sort_as_str(self, column, reverse) -> None:
         self._sort(column, reverse, str, self._sort_as_str)
 
 
@@ -185,3 +182,13 @@ def from_mm(mms: Distance) -> Distance:
 def to_kw(watt: Power) -> Power:
     """Преобразование ватт в киловатты."""
     return Power(watt / 1e3)
+
+
+def from_rpm(rev_per_min: float) -> Rotation:
+    """Об/мин → рад/сек"""
+    return Rotation(rev_per_min * 2 * pi / 60)
+
+
+def to_rpm(rad_per_sec: Rotation) -> float:
+    """Рад/сек → об/мин"""
+    return rad_per_sec / 2 / pi * 60

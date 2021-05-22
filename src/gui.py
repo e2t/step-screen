@@ -1,9 +1,9 @@
 ﻿"""Графическая оболочка программы."""
 import locale
-from tkinter import (Tk, W, E, N, S, NORMAL, DISABLED, END, Event, BooleanVar)
+from tkinter import (Misc, Tk, W, E, N, S, NORMAL, DISABLED, END, Event, BooleanVar)
 from tkinter.ttk import (Frame, Label, Entry, Button, Combobox, Checkbutton)
 from tkinter.scrolledtext import ScrolledText
-from Dry.allgui import MyFrame, fstr, to_mm, to_kw, handle_ctrl_shortcut
+from Dry.allgui import MyFrame, fstr, to_mm, to_kw, handle_ctrl_shortcut, to_rpm
 from Dry.allcalc import InputDataError
 from stepscreen import (StepScreen, SCREEN_WIDTH_SERIES, SCREEN_HEIGHT_SERIES, InputData,
                         THICKNESS_STEEL, STEEL_GAPS)
@@ -21,7 +21,7 @@ class MainForm(MyFrame):
 
     def __init__(self, root: Tk) -> None:
         """Конструктор формы."""
-        root.title('Расчет ступенчатых решеток v2.2.0')
+        root.title('Расчет ступенчатых решеток v2.3.0')
         super().__init__(root)
 
         cmb_w = 5
@@ -64,10 +64,11 @@ class MainForm(MyFrame):
         row += 1
         self._var_steel_only = BooleanVar()
         _chk_steel_only = Checkbutton(subframe, text='Только стальные ламели',
-                                      var=self._var_steel_only)
+                                      variable=self._var_steel_only)
         _chk_steel_only.grid(row=row, column=0, sticky=W, columnspan=2)
 
-        self._memo = ScrolledText(self, state=DISABLED, height=15, width=45)
+        self._memo = ScrolledText(self, state=DISABLED, height=15, width=55,
+                                  font=("TkDefaultFont"))
         self._memo.grid(row=0, column=1, sticky=W + E + N + S)
 
         btn_frame = Frame(self)
@@ -78,7 +79,7 @@ class MainForm(MyFrame):
 
         self._add_pad_to_all_widgets()
         self._focus_first_entry(self)
-        root.bind_all('<Key>', handle_ctrl_shortcut, '+')
+        root.bind_all('<Key>', handle_ctrl_shortcut, True)
 
     def _output(self, text: str) -> None:
         self._memo.config(state=NORMAL)
@@ -111,14 +112,19 @@ class MainForm(MyFrame):
             self._output(str(excp))
             return
 
+        if scr.drive_unit is not None:
+            drive = '«{}»  {} кВт, {} об/мин, {} Нм'.format(
+                scr.drive_unit.name, fstr(to_kw(scr.drive_unit.power)),
+                fstr(to_rpm(scr.drive_unit.speed)), fstr(scr.drive_unit.torque))
+        else:
+            drive = 'нестандартный'
         output = [
             'РСК {0}, прозор {3} ({1}/{2}), глубина {4} мм'.format(
                 scr.description, fstr(to_mm(scr.moving_steel_s)), fstr(to_mm(scr.fixed_steel_s)),
                 fstr(to_mm(scr.gap)), fstr(to_mm(channel_height))),
             'Масса решетки {} кг{}'.format(fstr(scr.full_mass, '%.0f'),
                                            ' (без привода)' if scr.drive_unit is None else ''),
-            'Привод {} кВт'.format(fstr(to_kw(scr.drive_unit.power))
-                                   if scr.drive_unit is not None else None),
+            f'Привод {drive}',
             '',
             'Ширина наружная B = {} мм'.format(fstr(to_mm(scr.outer_screen_width))),
             'Ширина внутренняя A = {} мм'.format(fstr(to_mm(scr.inner_screen_width))),
@@ -134,10 +140,8 @@ class MainForm(MyFrame):
             '',
             '====== Для конструктора ======',
             '']
-        if scr.drive_unit is not None:
-            output.append('Привод {} ({} Нм)'.format(
-                scr.drive_unit.name, fstr(scr.drive_unit.output_torque)))
         output += (
+            'Толщина боковой накладки не более {} мм'.format(fstr(to_mm(scr.min_side_gap))),
             'Подвижных пластин {} шт.'.format(scr.moving_plates_number),
             '- сталь {} мм'.format(fstr(to_mm(scr.moving_steel_s))))
         if scr.have_plastic_part:
@@ -155,7 +159,6 @@ class MainForm(MyFrame):
         output += (
             '- крайний паз {} мм'.format(fstr(to_mm(scr.start_fixed))),
             'Шаг пластин по ширине {} мм'.format(fstr(to_mm(scr.plates_step))),
-            'Толщина боковой накладки не более {} мм'.format(fstr(to_mm(scr.min_side_gap))),
             '',)
         if scr.have_plastic_part:
             output.append(
