@@ -9,7 +9,7 @@ unit ScreenCalculation;
 interface
 
 uses
-  Nullable;
+  Nullable, Fgl;
 
 type
   //Набор пластин: 0 - подвижные (тоньше), 1 - неподвижные (толще)
@@ -41,6 +41,13 @@ type
   end;
 
   TNullableDrive = specialize TNullable<TDriveUnit>;
+
+  generic TCumulativeDict<TKey, TData> = class(specialize TFPGMap<TKey, TData>)
+  public
+    procedure Accumulate(const Key: TKey; const AccData: TData);
+  end;
+
+  TSheetCounts = specialize TCumulativeDict<Double, Integer>;
 
   //Массы отдельных узлов решетки.
   TStepScreenMass = record
@@ -132,6 +139,8 @@ type
     Hose: Double;
     //Защитный экран (резина + прижимные планки)
     RubberScreen: Double;
+    //Количество листов пластика для пластин
+    PlasticSheetCounts: TSheetCounts;
   end;
 
   //Диапазон вещественных значений: 0 - Min, 1 - Max
@@ -159,6 +168,8 @@ type
     Weights: TStepScreenMass;
     Description, EquationFile: string;
     SumPlasticS: TDiapason;
+
+    PlasticSheetCounts: TSheetCounts;
   end;
 
   TPlasticSet = record
@@ -241,17 +252,38 @@ const
   //Допустимый зазор между пластиковыми пластинами.
   PlasticGap: TDiapason = (0.0004, 0.001);
 
-function CalcManualScreen(out Scr: TStepScreen; const InputData: TInputData): string;
+  //Высота пластин подвижных и неподвижных.
+  PlateHeight = 0.234;
+
+  //Ширина пластиковых листов
+  PlasticSheetWidth = 1.5;
+
+  //Длина пластиковых листов
+  PlasticSheetLength = 3.0;
+
+procedure CalcStepScreen(var Scr: TStepScreen; const InputData: TInputData;
+  out Error: string);
 
 implementation
 
 uses
-  Classes, Math, Measurements, SysUtils, MathUtils, StrConvert;
+  Classes, Math, Measurements, SysUtils, MathUtils, StrConvert, CheckNum;
 
 var
   TiltAngle, TeethStepY, TeethStepX: Double;
   DriveUnits05XX: array [0..1] of TDriveUnit;
   DriveUnits: array [0..3] of TDriveUnit;
+
+procedure TCumulativeDict.Accumulate(const Key: TKey; const AccData: TData);
+var
+  Index: Integer;
+begin
+  Index := Self.IndexOf(Key);
+  if Index >= 0 then
+    Self.Data[Index] := Self.Data[Index] + AccData
+  else
+    Self.Add(Key, AccData);
+end;
 
 //Создание обозначения решетки (XXYY).
 function CreateDescription(const ScreenWS, ScreenHS: Integer): string;
@@ -382,8 +414,8 @@ begin
   I := 0;
   while (I <= High(ThicknessPlastic)) and (not IsFound) do
   begin
-    if (SumPlasticS[0] <= ThicknessPlastic[I].Summa) and
-      (ThicknessPlastic[I].Summa <= SumPlasticS[1]) then
+    if IsLessEq(SumPlasticS[0], ThicknessPlastic[I].Summa) and
+      IsLessEq(ThicknessPlastic[I].Summa, SumPlasticS[1]) then
     begin
       Result := ThicknessPlastic[I].Sheets;
       IsFound := True;
@@ -1068,13 +1100,33 @@ begin
   Assert(IsFound);
 end;
 
+function CalcPlasticSheetCount(const PlateNumber: Integer): Integer;
+const
+  PlatesCountInSheet = Trunc(PlasticSheetWidth / PlateHeight);
+begin
+  Result := Ceil(PlateNumber / PlatesCountInSheet);
+end;
+
+procedure CalcPlasticSheetCounts(var PlasticSheetCounts: TSheetCounts;
+  const FixedPlasticS, MovingPlasticS: TNullableReal;
+  const FixedPlatesNumber, MovingPlatesNumber: Integer);
+begin
+  PlasticSheetCounts.Clear;
+  if FixedPlasticS.HasValue then
+    PlasticSheetCounts.Accumulate(
+      FixedPlasticS.Value, CalcPlasticSheetCount(FixedPlatesNumber));
+  if MovingPlasticS.HasValue then
+    PlasticSheetCounts.Accumulate(
+      MovingPlasticS.Value, CalcPlasticSheetCount(MovingPlatesNumber));
+end;
+
 //Конструктор и одновременно расчет решетки.
-function CalcManualScreen(out Scr: TStepScreen; const InputData: TInputData): string;
+procedure CalcStepScreen(var Scr: TStepScreen; const InputData: TInputData;
+  out Error: string);
 var
   PlasticPlates: TPlatesSet;
 begin
-  Scr := Default(TStepScreen);
-  Result := '';
+  Error := '';
 
   Scr.ScreenWS := InputData.ScreenWS;
   Scr.ScreenHS := InputData.ScreenHS;
@@ -1088,7 +1140,10 @@ begin
   Scr.DischargeFullHeight := CalcDischargeFullHeight(Scr.DiffTeeth);
   Scr.DischargeHeight := CalcDischargeHeight(Scr.DischargeFullHeight, Scr.ChannelHeight);
   if Scr.DischargeHeight < MinDischargeHeight then
-    Exit('Слишком глубокий канал.');
+  begin
+    Error := 'Слишком глубокий канал.';
+    Exit;
+  end;
 
   Scr.OuterScreenWidth := CalcOuterScreenWidth(Scr.ScreenWs);
   Scr.InnerScreenWidth := CalcInnerScreenWidth(Scr.ScreenWs);
@@ -1147,6 +1202,8 @@ begin
 
   Scr.Description := CreateDescription(Scr.ScreenWs, Scr.ScreenHs);
   Scr.EquationFile := CreateEquationFile(Scr);
+  CalcPlasticSheetCounts(Scr.PlasticSheetCounts, Scr.FixedPlasticS, Scr.MovingPlasticS,
+    Scr.FixedPlatesNumber, Scr.MovingPlatesNumber);
 end;
 
 initialization

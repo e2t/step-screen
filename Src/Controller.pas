@@ -40,14 +40,14 @@ begin
   MainForm.ComboBoxThickness.Text := MainForm.ComboBoxThickness.Items[0];
 end;
 
-function CreateInputData(out InputData: TInputData): string;
+procedure CreateInputData(out InputData: TInputData; out Error: string);
 const
   SIncorrectValue = ' - неправильное значение.';
 var
   IsValid: Boolean;
 begin
   InputData := Default(TInputData);
-  Result := '';
+  Error := '';
 
   MainForm.ComboBoxWidth.GetInt(IsValid, InputData.ScreenWS);
   Assert(IsValid);
@@ -57,13 +57,19 @@ begin
 
   MainForm.ComboBoxGap.GetRealMin(0, IsValid, InputData.MainSteelGapMm);
   if not IsValid then
-    Exit('Прозор' + SIncorrectValue);
+  begin
+    Error := 'Прозор' + SIncorrectValue;
+    Exit;
+  end;
 
   InputData.SteelS := ThicknessSteel[MainForm.ComboBoxThickness.ItemIndex];
 
   MainForm.EditDepth.GetRealMin(0, IsValid, InputData.ChannelHeightMm);
   if not IsValid then
-    Exit('Глубина канала' + SIncorrectValue);
+  begin
+    Error := 'Глубина канала' + SIncorrectValue;
+    Exit;
+  end;
 
   InputData.HavePlasticPart := not MainForm.CheckBoxPlasticPart.Checked;
 end;
@@ -74,6 +80,7 @@ var
   Drive: string;
   WoDriveMark: string = '';
   SMovingSteelS, SFixedSteelS: string;
+  I: Integer;
 begin
   if Scr.DriveUnit.HasValue then
     Drive := Format('«%s»  %s кВт; %s об/мин; %s Нм', [
@@ -135,6 +142,12 @@ begin
     FormatFloat('0.###', ToMm(Scr.PlatesStep))]),
     ''
     ]);
+
+  for I := 0 to Scr.PlasticSheetCounts.Count - 1 do
+    Lines.Add(Format('Листовой полипропилен PP-C %.1f мм - %d лист. %.1fx%.1f', [
+      ToMm(Scr.PlasticSheetCounts.Keys[I]), Scr.PlasticSheetCounts.Data[I],
+      PlasticSheetWidth, PlasticSheetLength]));
+
   if Scr.HavePlasticPart then
     Lines.Add(Format('Сумма толщин пластиковых пластин %s…%s мм', [
       FormatFloat('0.###', ToMm(Scr.SumPlasticS[0])),
@@ -159,20 +172,28 @@ begin
   MainForm.MemoOutput.SelStart := 0;
 end;
 
+var
+  Scr: TStepScreen;
+
 procedure Run();
 var
   InputData: TInputData;
-  InputDataError: string;
-  Scr: TStepScreen;
+  InputDataError, CalcError: string;
 begin
-  InputDataError := CreateInputData(InputData);
+  CreateInputData(InputData, InputDataError);
   if InputDataError = '' then
   begin
-    CalcManualScreen(Scr, InputData);
-    PrintOutput(CreateOutput(Scr));
+    CalcStepScreen(Scr, InputData, CalcError);
+    if CalcError = '' then
+      PrintOutput(CreateOutput(Scr))
+    else
+      PrintOutput(CalcError);
   end
   else
     PrintOutput(InputDataError);
 end;
 
+initialization
+  Scr := Default(TStepScreen);
+  Scr.PlasticSheetCounts := TSheetCounts.Create;
 end.
