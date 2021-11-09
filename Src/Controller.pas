@@ -15,7 +15,7 @@ implementation
 
 uses
   ProgramInfo, GuiMainForm, GuiHelper, Measurements, Classes, SysUtils,
-  ScreenCalculation, StrConvert;
+  ScreenCalculation, StrConvert, Nullable;
 
 procedure MainFormInit();
 var

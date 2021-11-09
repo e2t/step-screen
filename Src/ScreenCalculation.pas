@@ -139,8 +139,6 @@ type
     Hose: Double;
     //Защитный экран (резина + прижимные планки)
     RubberScreen: Double;
-    //Количество листов пластика для пластин
-    PlasticSheetCounts: TSheetCounts;
   end;
 
   //Диапазон вещественных значений: 0 - Min, 1 - Max
@@ -169,6 +167,7 @@ type
     Description, EquationFile: string;
     SumPlasticS: TDiapason;
 
+    //Количество листов пластика для пластин
     PlasticSheetCounts: TSheetCounts;
   end;
 

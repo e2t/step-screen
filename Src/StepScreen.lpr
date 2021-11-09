@@ -1,6 +1,10 @@
 program StepScreen;
 
-{$mode objfpc}{$H+}
+{$MODE OBJFPC}
+{$LONGSTRINGS ON}
+{$ASSERTIONS ON}
+{$RANGECHECKS ON}
+{$BOOLEVAL OFF}
 
 uses
  {$IFDEF UNIX} {$IFDEF UseCThreads}

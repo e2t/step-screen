@@ -21,8 +21,8 @@
       <UseVersionInfo Value="True"/>
       <MajorVersionNr Value="2"/>
       <MinorVersionNr Value="4"/>
-      <RevisionNr Value="1"/>
-      <BuildNr Value="2"/>
+      <RevisionNr Value="2"/>
+      <BuildNr Value="3"/>
       <Language Value="0419"/>
       <StringTable FileDescription="Расчет ступенчатых решеток" InternalName="StepScreen" LegalCopyright="Zero-Clause BSD (0BSD)" OriginalFilename="StepScreen.exe" ProductName="StepScreen"/>
     </VersionInfo>
