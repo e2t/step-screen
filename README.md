@@ -1,6 +1,6 @@
 # Step-Screen
 
-Десктопное GUI-приложение для расчета ступенчатых решеток.
+Desktop GUI application for calculating step screen.
 
 ## License
 
