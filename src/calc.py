@@ -11,6 +11,10 @@ from captions import ErrorMsg, Output
 from constants import PLASTIC, STEEL
 
 
+class CalcError(Exception):
+    pass
+
+
 @dataclass(frozen=True)
 class HsData:
     diff_teeth: int
@@ -282,8 +286,9 @@ class StepScreen:
             self.diff_teeth * TEETH_STEP_Y
         self.dropheight = self.full_dropheight - self.depth
         if self.dropheight < MIN_DISCHARGE_HEIGHT:
-            adderror(ErrorMsg.TOODEEP)
-            return
+            max_depth = self.full_dropheight - MIN_DISCHARGE_HEIGHT
+            adderror(ErrorMsg.TOODEEP, roundup(to_mm(max_depth)))
+            raise CalcError()
 
         self.side_steel_gap = self.calc_side_gap(self.steel_moving.s)
         self.fixed_start = self.side_steel_gap + self.steel_moving.s \
@@ -378,8 +383,12 @@ class StepScreen:
 
 def run_calc(inpdata: InputData, adderror: AddMsgL10n,
              addline: AddMsgL10n) -> None:
-    scr = StepScreen(inpdata, adderror)
-    create_result(scr, addline)
+    try:
+        scr = StepScreen(inpdata, adderror)
+    except CalcError:
+        pass
+    else:
+        create_result(scr, addline)
 
 
 def create_result(scr: StepScreen, addline: AddMsgL10n) -> None:

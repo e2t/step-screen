@@ -100,10 +100,10 @@ class ErrorMsg:
     }
 
     TOODEEP = {
-        ENG: "The channel is too deep!",
-        UKR: "Занадто глибокий канал!",
-        RUS: "Слишком глубокий канал!",
-        LIT: "Kanalas per gilus!"
+        ENG: "The channel is too deep! (max. {:g} mm)",
+        UKR: "Занадто глибокий канал! (макс. {:g} мм)",
+        RUS: "Слишком глубокий канал! (макс. {:g} мм)",
+        LIT: "Kanalas per gilus! (max. {:g} mm)"
     }
 
 

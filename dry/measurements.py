@@ -1,3 +1,6 @@
+import math
+
+
 def mm(value: float) -> float:
     return value / 1e3
 
@@ -40,3 +43,15 @@ def to_rpm(rps: float) -> float:
 
 def kg(value: float) -> float:
     return value
+
+
+def degree(value: float) -> float:
+    return math.radians(value)
+
+
+def to_degree(rad: float) -> float:
+    return math.degrees(rad)
+
+
+def liter_per_sec(value: float) -> float:
+    return value / 1e3

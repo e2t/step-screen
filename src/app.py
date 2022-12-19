@@ -29,9 +29,10 @@ class App(CalcApp):
         super().__init__(root,
                          appname="StepScreen",
                          appvendor="Esmil",
-                         appversion="2.5.0",
+                         appversion="2.5.1",
                          uilangs=(ENG, UKR, LIT),
-                         outlangs=(ENG, UKR, RUS))
+                         outlangs=(ENG, UKR, RUS),
+                         title=UiText.TITLE)
 
         self.wslabel = Label(self.widgetframe)
         self.wslabel.grid(row=0, column=0, padx=PAD, pady=PAD, sticky=W)
@@ -74,10 +75,9 @@ class App(CalcApp):
                               show="headings",
                               selectmode="browse",
                               height=len(PLATES_AND_SPACERS),
-                              columns=(Col.FIXED, Col.MOVING, Col.SPACER))
-        self.table.column(Col.FIXED, width=1)
-        self.table.column(Col.MOVING, width=1)
-        self.table.column(Col.SPACER, width=1)
+                              columns=tuple(Col))
+        for i in Col:
+            self.table.column(i, width=1)
         self.table.grid(row=5, column=0, columnspan=2, padx=PAD, sticky=W + E)
         self.tablerows = {}
         for _i, value in enumerate(PLATES_AND_SPACERS):
@@ -113,7 +113,6 @@ class App(CalcApp):
                             ])
         self.platelabel["text"] = UiText.PLATE[self.uilang]
         self.steelonlybox["text"] = UiText.STEELONLY[self.uilang]
-        self.root.title(f"{UiText.TITLE[self.uilang]} - {self.apptitle}")
 
     def get_inputdata(self) -> None:
         wschoise = self.wsbox.get()

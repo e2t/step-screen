@@ -65,8 +65,12 @@ class MsgQueue:
 
 class CalcApp():
     def __init__(self, root: Tk, appname: str, appvendor: str, appversion: str,
-                 uilangs: Langs, outlangs: Langs) -> None:
+                 uilangs: Langs, outlangs: Langs, title: MsgFormat) -> None:
         self.root = root
+        self.title = title
+        self.appname = appname
+        self.appversion = appversion
+
         self.errors = MsgQueue()
         self.results = MsgQueue()
         self.inpdata: dict[str, Any] = {}
@@ -85,37 +89,35 @@ class CalcApp():
         self.uichoices = {LANG_CAPTIONS[i]: i for i in uilangs}
         self.outchoices = {LANG_CAPTIONS[i]: i for i in outlangs}
 
-        self.apptitle = f"{appname} v{appversion}"
-        root.title(self.apptitle)
         mainframe = Frame(root)
         mainframe.grid(sticky="WENS", padx=PAD, pady=PAD)
         self.widgetframe = Frame(mainframe)
         self.widgetframe.grid(row=0, column=0, sticky="WN")
-        self.memo = ScrolledText(mainframe,
-                                 state="disabled",
+        self.outputframe = Frame(mainframe)
+        self.outputframe.grid(row=0, column=1, columnspan=2, sticky="WENS")
+        self.memo = ScrolledText(self.outputframe, state="disabled",
                                  font="TkDefaultFont")
-        self.memo.grid(row=0,
-                       column=1,
-                       columnspan=2,
-                       sticky="WENS",
-                       padx=PAD,
-                       pady=PAD)
-        self.uilangbox = Combobox(mainframe,
-                                  state="readonly",
+        self.memo.grid(row=0, column=0, sticky="WENS", padx=PAD, pady=PAD)
+        bottom_row = 10
+        self.uilangbox = Combobox(mainframe, state="readonly",
                                   values=tuple(self.uichoices))
         self.uilangbox.set(LANG_CAPTIONS[self.uilang])
-        self.uilangbox.grid(row=1, column=0, sticky="W", padx=PAD, pady=PAD)
-        self.outlangbox = Combobox(mainframe,
-                                   state="readonly",
+        self.uilangbox.grid(row=bottom_row, column=0, sticky="W",
+                            padx=PAD, pady=PAD)
+        self.outlangbox = Combobox(mainframe, state="readonly",
                                    values=tuple(self.outchoices))
         self.outlangbox.set(LANG_CAPTIONS[self.outlang])
-        self.outlangbox.grid(row=1, column=1, sticky="W", padx=PAD, pady=PAD)
+        self.outlangbox.grid(row=bottom_row, column=1, sticky="W",
+                             padx=PAD, pady=PAD)
         self.runbutton = Button(mainframe, command=self.on_run)
-        self.runbutton.grid(row=1, column=2, sticky="E", padx=PAD, pady=PAD)
+        self.runbutton.grid(row=bottom_row, column=2, sticky="E",
+                            padx=PAD, pady=PAD)
         root.grid_rowconfigure(0, weight=1)
         root.grid_columnconfigure(0, weight=1)
         mainframe.grid_rowconfigure(0, weight=1)
         mainframe.grid_columnconfigure(1, weight=1)
+        self.outputframe.grid_rowconfigure(0, weight=1)
+        self.outputframe.grid_columnconfigure(0, weight=1)
 
         root.protocol("WM_DELETE_WINDOW", self.on_close)
         root.bind("<Return>", self.event_run)
@@ -133,6 +135,11 @@ class CalcApp():
     def translate_ui(self) -> None:
         self.uilang = self.uichoices[self.uilangbox.get()]
         self.cfg.set(GUI_SECTION, OPT_UILANG, self.uilang)
+        if isinstance(self.title, dict):
+            title = self.title[self.uilang]
+        else:
+            title = self.title
+        self.root.title(f"{title} - {self.appname} v{self.appversion}")
         self.runbutton["text"] = RUN_CAPTIONS[self.uilang]
         if self.errors:
             self.print_errors()
@@ -143,16 +150,13 @@ class CalcApp():
         if not self.errors:
             self.print_result()
 
-    def event_uilang(self, _event  # type: Event[Combobox]
-                     ) -> None:
+    def event_uilang(self, _event: "Event[Combobox]") -> None:
         self.translate_ui()
 
-    def event_outlang(self, _event  # type: Event[Combobox]
-                      ) -> None:
+    def event_outlang(self, _event: "Event[Combobox]") -> None:
         self.translate_out()
 
-    def event_run(self, _event  # type: Event[Misc]
-                  ) -> None:
+    def event_run(self, _event: "Event[Misc]") -> None:
         self.on_run()
 
     def on_close(self) -> None:
