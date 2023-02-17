@@ -1,4 +1,4 @@
-# Step-Screen
+# StepScreen
 
 Desktop GUI application for calculating step screen.
 
