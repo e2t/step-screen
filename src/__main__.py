@@ -3,7 +3,7 @@ from tkinter import Tk
 
 from app import App
 
-setlocale(LC_ALL, "")
+setlocale(LC_ALL, '')
 root = Tk()
 app = App(root)
 app.init()

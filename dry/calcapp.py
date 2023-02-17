@@ -7,54 +7,53 @@ from typing import Any, Callable
 
 from appdirs import user_config_dir
 
+from dry.basegui import PAD
 from dry.l10n import ENG, LIT, RUS, UKR, MsgFormat
 
 LANG_CAPTIONS = {
-    ENG: "English",
-    UKR: "Українська",
-    RUS: "Русский",
-    LIT: "Lietuvių"
+    ENG: 'English',
+    UKR: 'Українська',
+    RUS: 'Русский',
+    LIT: 'Lietuvių'
 }
 RUN_CAPTIONS = {
-    ENG: "Run",
-    UKR: "Рахувати",
-    RUS: "Расчет",
-    LIT: "Skaičiuoti"
+    ENG: 'Run',
+    UKR: 'Рахувати',
+    RUS: 'Расчет',
+    LIT: 'Skaičiuoti'
 }
-GUI_SECTION = "Interface"
-OPT_UILANG = "uilang"
-OPT_OUTLANG = "outlang"
-PAD = 4
+GUI_SECTION = 'Interface'
+OPT_UILANG = 'uilang'
+OPT_OUTLANG = 'outlang'
 
 Langs = tuple[str, ...]
 
 
 class MsgQueue:
     def __init__(self) -> None:
-        self.queue: list[Callable[[str], str] | str] = []
-        self.msg: dict[str, str] = {}
+        self.queue: list[str | Callable[[str], str]] = []
+        self.msg: dict[str, list[str]] = {}
 
     def __bool__(self) -> bool:
         return bool(self.queue)
 
-    def __getitem__(self, lang: str) -> str:
+    def __getitem__(self, lang: str) -> list[str]:
         if lang not in self.msg:
-            lst = []
+            self.msg[lang] = []
             for i in self.queue:
                 if callable(i):
-                    lst.append(i(lang))
+                    self.msg[lang].append(i(lang))
                 else:
-                    lst.append(i)
-            self.msg[lang] = "\n".join(lst)
+                    self.msg[lang].append(i)
         return self.msg[lang]
 
     def append(self, s: MsgFormat, *args: object) -> None:
-        def msg(lang: str) -> str:  # crutch for mypy
+        def localize(lang: str) -> str:  # crutch for mypy
             assert isinstance(s, dict)
             return s[lang].format(*args)
 
         if isinstance(s, dict):
-            self.queue.append(msg)
+            self.queue.append(localize)
         else:
             self.queue.append(s.format(*args))
 
@@ -78,7 +77,7 @@ class CalcApp():
         cfgdir = user_config_dir(appname, appvendor, roaming=True)
         if not os.path.exists(cfgdir):
             os.makedirs(cfgdir)
-        self.cfgfile = os.path.join(cfgdir, "settings.ini")
+        self.cfgfile = os.path.join(cfgdir, 'settings.ini')
         self.cfg = ConfigParser()
         self.cfg.read(self.cfgfile)
         if not self.cfg.has_section(GUI_SECTION):
@@ -90,27 +89,27 @@ class CalcApp():
         self.outchoices = {LANG_CAPTIONS[i]: i for i in outlangs}
 
         mainframe = Frame(root)
-        mainframe.grid(sticky="WENS", padx=PAD, pady=PAD)
+        mainframe.grid(sticky='WENS', padx=PAD, pady=PAD)
         self.widgetframe = Frame(mainframe)
-        self.widgetframe.grid(row=0, column=0, sticky="WN")
+        self.widgetframe.grid(row=0, column=0, sticky='WN')
         self.outputframe = Frame(mainframe)
-        self.outputframe.grid(row=0, column=1, columnspan=2, sticky="WENS")
-        self.memo = ScrolledText(self.outputframe, state="disabled",
-                                 font="TkDefaultFont")
-        self.memo.grid(row=0, column=0, sticky="WENS", padx=PAD, pady=PAD)
+        self.outputframe.grid(row=0, column=1, columnspan=2, sticky='WENS')
+        self.memo = ScrolledText(self.outputframe, state='disabled',
+                                 font='TkDefaultFont')
+        self.memo.grid(row=0, column=0, sticky='WENS', padx=PAD, pady=PAD)
         bottom_row = 10
-        self.uilangbox = Combobox(mainframe, state="readonly",
+        self.uilangbox = Combobox(mainframe, state='readonly',
                                   values=tuple(self.uichoices))
         self.uilangbox.set(LANG_CAPTIONS[self.uilang])
-        self.uilangbox.grid(row=bottom_row, column=0, sticky="W",
+        self.uilangbox.grid(row=bottom_row, column=0, sticky='W',
                             padx=PAD, pady=PAD)
-        self.outlangbox = Combobox(mainframe, state="readonly",
+        self.outlangbox = Combobox(mainframe, state='readonly',
                                    values=tuple(self.outchoices))
         self.outlangbox.set(LANG_CAPTIONS[self.outlang])
-        self.outlangbox.grid(row=bottom_row, column=1, sticky="W",
+        self.outlangbox.grid(row=bottom_row, column=1, sticky='W',
                              padx=PAD, pady=PAD)
         self.runbutton = Button(mainframe, command=self.on_run)
-        self.runbutton.grid(row=bottom_row, column=2, sticky="E",
+        self.runbutton.grid(row=bottom_row, column=2, sticky='E',
                             padx=PAD, pady=PAD)
         root.grid_rowconfigure(0, weight=1)
         root.grid_columnconfigure(0, weight=1)
@@ -119,10 +118,10 @@ class CalcApp():
         self.outputframe.grid_rowconfigure(0, weight=1)
         self.outputframe.grid_columnconfigure(0, weight=1)
 
-        root.protocol("WM_DELETE_WINDOW", self.on_close)
-        root.bind("<Return>", self.event_run)
-        self.uilangbox.bind("<<ComboboxSelected>>", self.event_uilang)
-        self.outlangbox.bind("<<ComboboxSelected>>", self.event_outlang)
+        root.protocol('WM_DELETE_WINDOW', self.on_close)
+        root.bind('<Return>', self.event_run)
+        self.uilangbox.bind('<<ComboboxSelected>>', self.event_uilang)
+        self.outlangbox.bind('<<ComboboxSelected>>', self.event_outlang)
 
     def getcfg_lang(self, option: str, langs: Langs) -> str:
         lang = self.cfg.get(GUI_SECTION, option, fallback=langs[0])
@@ -139,8 +138,8 @@ class CalcApp():
             title = self.title[self.uilang]
         else:
             title = self.title
-        self.root.title(f"{title} - {self.appname} v{self.appversion}")
-        self.runbutton["text"] = RUN_CAPTIONS[self.uilang]
+        self.root.title(f'{title} — {self.appname} {self.appversion}')
+        self.runbutton['text'] = RUN_CAPTIONS[self.uilang]
         if self.errors:
             self.print_errors()
 
@@ -150,17 +149,17 @@ class CalcApp():
         if not self.errors:
             self.print_result()
 
-    def event_uilang(self, _event: "Event[Combobox]") -> None:
+    def event_uilang(self, _event: 'Event[Combobox]') -> None:
         self.translate_ui()
 
-    def event_outlang(self, _event: "Event[Combobox]") -> None:
+    def event_outlang(self, _event: 'Event[Combobox]') -> None:
         self.translate_out()
 
-    def event_run(self, _event: "Event[Misc]") -> None:
+    def event_run(self, _event: 'Event[Misc]') -> None:
         self.on_run()
 
     def on_close(self) -> None:
-        with open(self.cfgfile, "w", encoding="utf-8") as file:
+        with open(self.cfgfile, 'w', encoding='utf-8') as file:
             self.cfg.write(file)
         self.root.destroy()
 
@@ -170,17 +169,17 @@ class CalcApp():
     def runcalc(self) -> None:
         pass
 
-    def print(self, text: str) -> None:
-        self.memo.configure(state="normal")
+    def print_to_memo(self, text: str) -> None:
+        self.memo.configure(state='normal')
         self.memo.delete(1.0, END)
         self.memo.insert(END, text)
-        self.memo.configure(state="disabled")
+        self.memo.configure(state='disabled')
 
     def print_errors(self) -> None:
-        self.print(self.errors[self.uilang])
+        self.print_to_memo('\n'.join(self.errors[self.uilang]))
 
     def print_result(self) -> None:
-        self.print(self.results[self.outlang])
+        self.print_to_memo('\n'.join(self.results[self.outlang]))
 
     def on_run(self) -> None:
         self.errors.clear()
