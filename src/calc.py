@@ -152,7 +152,8 @@ START_AXE_HEIGHT = meter(3.13)
 
 # Минимальная высота сброса над каналом.
 # 2023-02-17: Reduced. It used to be 660 mm.
-MIN_DISCHARGE_HEIGHT = mm(300)
+# 2023-03-15: Enlarged. It used to be 300 mm.
+MIN_DISCHARGE_HEIGHT = mm(630)
 
 # Минимальный зазор между дистанционером и стальной пластиной.
 STEEL_GAP_MIN = mm(0.36)
@@ -485,6 +486,7 @@ def create_equations(scr: StepScreen, addline: AddMsgL10n) -> None:
     pmb_step = round(pmb_approx_work_width / (pmb_number - 1), 2)
     # Болты крепления пластин: расстояние от боковины до крайнего болта
     pmb_start = (scr.inner_width - pmb_step * (pmb_number - 1)) / 2
+
     # Болты сброса: примерное расстояние между крайними болтами
     dpb_max_size = scr.inner_width - mm(45)
     # Болты сброса: количество болтов
@@ -493,6 +495,7 @@ def create_equations(scr: StepScreen, addline: AddMsgL10n) -> None:
     dpb_step = round(dpb_max_size / (dpb_count - 1), 3)
     # Болты сброса: расстояние между крайними болтами
     dpb_max_size = (dpb_count - 1) * dpb_step
+
     # Крышка сброса: расстояние между крайними болтами
     dpc_max_size = scr.inner_width - mm(103)
     # Крышка сброса: количество болтов (в длину)
@@ -500,7 +503,17 @@ def create_equations(scr: StepScreen, addline: AddMsgL10n) -> None:
     # Крышка сброса: шаг между болтами (в длину)
     dpc_step = dpc_max_size / (dpc_count - 1)
 
-    addline('"inner_width\" = {:g}mm  '
+    # Окно сброса: ширина перемычки между окнами на бункере сброса
+    dpw_bridge = mm(100)
+    # Окно сброса: количество окон
+    dpw_count = 1 if scr.ws <= 12 else 2
+    # Окно сброса: ширина окна
+    dpw_width = (scr.inner_width - 2 * mm(55) - dpw_bridge * (dpw_count - 1)) \
+        / dpw_count
+    # Окно сброса: шаг окон
+    dpw_step = dpw_width + dpw_bridge
+
+    addline('"inner_width" = {:g}mm  '
             "''Внутрішня ширина решітки",
             to_mm(scr.inner_width))
 
@@ -508,93 +521,105 @@ def create_equations(scr: StepScreen, addline: AddMsgL10n) -> None:
             "''Товщина сталевої нерухомої пластини",
             to_mm(scr.steel_fixed.s))
 
-    addline('"thickness_moving\" = {:g}mm  '
+    addline('"thickness_moving" = {:g}mm  '
             "''Товщина сталевої рухомої пластини",
             to_mm(scr.steel_moving.s))
 
-    addline('"main_gap\" = {:.3f}mm  '
+    addline('"main_gap" = {:.3f}mm  '
             "''Прозор між пластинами",
             to_mm(scr.gap))
 
-    addline('"teeth_number\" = {}  '
+    addline('"teeth_number" = {}  '
             "''Кількість зубів пластин (для масиву)",
             scr.all_teeth)
 
     if scr.plastic_fixed:
-        addline('"plastic_fixed\" = {:g}mm  '
+        addline('"plastic_fixed" = {:g}mm  '
                 "''Товщина пластикової нерухомої пластини",
                 to_mm(scr.plastic_fixed.s))
 
     if scr.plastic_moving:
-        addline('"plastic_moving\" = {:g}mm  '
+        addline('"plastic_moving" = {:g}mm  '
                 "''Товщина пластикової рухомої пластини",
                 to_mm(scr.plastic_moving.s))
 
-    addline('"step\" = {:.3f}mm  '
+    addline('"step" = {:.3f}mm  '
             "''Крок між пластинами одного полотна",
             to_mm(scr.step))
 
-    addline('"number_fixed\" = {}  '
+    addline('"number_fixed" = {}  '
             "''Кількість нерухомих пластин",
             scr.fixed_count)
 
-    addline('"number_moving\" = {}  '
+    addline('"number_moving" = {}  '
             "''Кількість рухомих пластин",
             scr.moving_count)
 
-    addline('"side_gap\" = {:.3f}mm  '
+    addline('"side_gap" = {:.3f}mm  '
             "''Зазор між боковиною та крайньою пластиною",
             to_mm(scr.side_steel_gap))
 
-    addline('"start_fixed\" = {:.3f}mm  '
+    addline('"start_fixed" = {:.3f}mm  '
             "''Відстань від боковини до середини нерухомої пластини",
             to_mm(scr.fixed_start))
 
-    addline('"start_moving\" = {:.3f}mm  '
+    addline('"start_moving" = {:.3f}mm  '
             "''Відстань від боковини до середини рухомої пластини",
             to_mm(scr.moving_start))
 
     if not scr.spacer.designation:
-        addline('"gap_limiter_thickness\" = {:g}mm  '
+        addline('"gap_limiter_thickness" = {:g}mm  '
                 "''Товщина дистанційника пластин",
                 to_mm(scr.spacer.s))
 
-    addline('"bottom_spacer_thickness\" = {:g}mm  '
+    addline('"bottom_spacer_thickness" = {:g}mm  '
             "''Товщина нижнього дистанційника",
             to_mm(scr.bottom_spacer_s))
 
-    addline('"pmb_number\" = {}  '
+    addline('"pmb_number" = {}  '
             "''Болти кріплення пластин: кількість болтів",
             pmb_number)
 
-    addline('"pmb_step\" = {:g}mm  '
+    addline('"pmb_step" = {:g}mm  '
             "''Болти кріплення пластин: крок між болтами",
             to_mm(pmb_step))
 
-    addline('"pmb_start\" = {:g}mm  '
+    addline('"pmb_start" = {:g}mm  '
             "''Болти кріплення пластин: "
             'відстань від боковини до крайнього болта',
             to_mm(pmb_start))
 
-    addline('"dpb_max_size\" = {:g}mm  '
+    addline('"dpb_max_size" = {:g}mm  '
             "''Болти скидання: відстань між крайніми болтами",
             to_mm(dpb_max_size))
 
-    addline('"dpb_count\" = {}  '
+    addline('"dpb_count" = {}  '
             "''Болти скидання: кількість болтів",
             dpb_count)
 
-    addline('"dpb_step\" = {:g}mm  '
+    addline('"dpb_step" = {:g}mm  '
             "''Болти скидання: крок між болтами",
             to_mm(dpb_step))
 
-    addline('"dpc_step\" = {:g}mm  '
+    addline('"dpc_step" = {:g}mm  '
             "''Кришка скидання: крок між болтами (завдовжки)",
             to_mm(dpc_step))
 
-    addline('"dpc_count\" = {}  '
+    addline('"dpc_count" = {}  '
             "''Кришка скидання: кількість болтів (завдовжки)",
             dpc_count)
+
+    addline('"dpw_width" = {:g}mm  '
+            "''Вікно скидання: ширина вікна",
+            to_mm(dpw_width))
+
+    addline('"dpw_step" = {:g}mm  '
+            "''Вікно скидання: крок вікон",
+            to_mm(dpw_step))
+
+    addline('"dpw_count" = {}  '
+            "''Вікно скидання: кількість вікон",
+            dpw_count)
 
 
 class WeightSet:

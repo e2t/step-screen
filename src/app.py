@@ -23,7 +23,7 @@ class App(CalcApp):
         super().__init__(root,
                          appname='StepScreen',
                          appvendor='Esmil',
-                         appversion='2023.1',
+                         appversion='2023.2',
                          uilangs=(ENG, UKR, LIT),
                          outlangs=(ENG, UKR, RUS),
                          title=UiText.TITLE)
