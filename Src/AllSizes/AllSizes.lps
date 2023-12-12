@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="12"/>
+    <BuildModes Active="Default"/>
+    <Units>
+      <Unit>
+        <Filename Value="AllSizes.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <TopLine Value="3"/>
+        <CursorPos X="18" Y="28"/>
+        <UsageCount Value="21"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Model"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="56"/>
+        <CursorPos X="7" Y="210"/>
+        <UsageCount Value="21"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\Shared\errors.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <WindowIndex Value="-1"/>
+        <TopLine Value="-1"/>
+        <CursorPos X="-1" Y="-1"/>
+        <UsageCount Value="21"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\StepScreen\umodelpresenter.pas"/>
+        <UnitName Value="UModelPresenter"/>
+        <EditorIndex Value="1"/>
+        <CursorPos X="73" Y="15"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit>
+    </Units>
+    <JumpHistory HistoryIndex="27">
+      <Position>
+        <Filename Value="AllSizes.lpr"/>
+        <Caret Line="4" Column="20"/>
+      </Position>
+      <Position>
+        <Filename Value="AllSizes.lpr"/>
+        <Caret Line="14" Column="3"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="11" Column="5"/>
+      </Position>
+      <Position>
+        <Filename Value="AllSizes.lpr"/>
+        <Caret Line="4" Column="31"/>
+      </Position>
+      <Position>
+        <Filename Value="AllSizes.lpr"/>
+        <Caret Line="21" Column="24"/>
+      </Position>
+      <Position>
+        <Filename Value="AllSizes.lpr"/>
+        <Caret Line="29" Column="9"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="45" Column="17" TopLine="28"/>
+      </Position>
+      <Position>
+        <Filename Value="AllSizes.lpr"/>
+        <Caret Line="29" Column="9"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="741" Column="27" TopLine="726"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="104" Column="14" TopLine="88"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="558" Column="24" TopLine="549"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="814" Column="55" TopLine="461"/>
+      </Position>
+      <Position>
+        <Filename Value="AllSizes.lpr"/>
+        <Caret Line="29" Column="11"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="45" Column="18" TopLine="28"/>
+      </Position>
+      <Position>
+        <Filename Value="AllSizes.lpr"/>
+        <Caret Line="29" Column="11"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="45" Column="20" TopLine="37"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="195" Column="46" TopLine="175"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="51" Column="19" TopLine="34"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="199" Column="51" TopLine="171"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="45" Column="18" TopLine="31"/>
+      </Position>
+      <Position>
+        <Filename Value="AllSizes.lpr"/>
+        <Caret Line="34" Column="31" TopLine="9"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="85" Column="27" TopLine="68"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="111" Column="74" TopLine="95"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="444" Column="30" TopLine="427"/>
+      </Position>
+      <Position>
+        <Filename Value="AllSizes.lpr"/>
+        <Caret Line="32" Column="22"/>
+      </Position>
+      <Position>
+        <Filename Value="AllSizes.lpr"/>
+        <Caret Line="41" Column="11" TopLine="9"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="45" Column="18" TopLine="28"/>
+      </Position>
+      <Position>
+        <Filename Value="AllSizes.lpr"/>
+        <Caret Line="28" Column="26"/>
+      </Position>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes ActiveMode=""/>
+    </RunParams>
+  </ProjectSession>
+</CONFIG>

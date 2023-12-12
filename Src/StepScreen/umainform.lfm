@@ -1,0 +1,171 @@
+object MainForm: TMainForm
+  Left = 376
+  Height = 400
+  Top = 142
+  Width = 800
+  Caption = 'MainForm'
+  ClientHeight = 400
+  ClientWidth = 800
+  Menu = MainMenu1
+  Position = poDefaultPosOnly
+  LCLVersion = '3.0.0.2'
+  object MainButtonPanel: TButtonPanel
+    Left = 6
+    Height = 26
+    Top = 368
+    Width = 788
+    OKButton.Name = 'OKButton'
+    OKButton.DefaultCaption = True
+    OKButton.OnClick = OKButtonClick
+    HelpButton.Name = 'HelpButton'
+    HelpButton.DefaultCaption = True
+    CloseButton.Name = 'CloseButton'
+    CloseButton.DefaultCaption = True
+    CancelButton.Name = 'CancelButton'
+    CancelButton.DefaultCaption = True
+    TabOrder = 0
+    ShowButtons = [pbOK]
+    ShowGlyphs = []
+    ShowBevel = False
+  end
+  object WsBox: TComboBox
+    Left = 200
+    Height = 23
+    Top = 8
+    Width = 100
+    ItemHeight = 15
+    Style = csDropDownList
+    TabOrder = 1
+  end
+  object HsBox: TComboBox
+    Left = 200
+    Height = 23
+    Top = 40
+    Width = 100
+    ItemHeight = 15
+    Style = csDropDownList
+    TabOrder = 2
+  end
+  object GapBox: TComboBox
+    Left = 200
+    Height = 23
+    Top = 72
+    Width = 100
+    ItemHeight = 15
+    Style = csDropDownList
+    TabOrder = 3
+  end
+  object DepthBox: TEdit
+    Left = 200
+    Height = 23
+    Top = 104
+    Width = 100
+    TabOrder = 4
+  end
+  object PlateTable: TListView
+    Left = 8
+    Height = 128
+    Top = 152
+    Width = 292
+    AutoWidthLastColumn = True
+    Columns = <    
+      item
+        Alignment = taCenter
+        Width = 95
+      end    
+      item
+        Alignment = taCenter
+        Width = 80
+      end    
+      item
+        Alignment = taCenter
+        Width = 113
+      end>
+    HideSelection = False
+    ReadOnly = True
+    RowSelect = True
+    TabOrder = 5
+    ViewStyle = vsReport
+  end
+  object WsLabel: TLabel
+    AnchorSideTop.Control = WsBox
+    AnchorSideTop.Side = asrCenter
+    Left = 8
+    Height = 15
+    Top = 12
+    Width = 44
+    Caption = 'WsLabel'
+  end
+  object HsLabel: TLabel
+    AnchorSideTop.Control = HsBox
+    AnchorSideTop.Side = asrCenter
+    Left = 8
+    Height = 15
+    Top = 44
+    Width = 42
+    Caption = 'HsLabel'
+  end
+  object GapLabel: TLabel
+    AnchorSideTop.Control = GapBox
+    AnchorSideTop.Side = asrCenter
+    Left = 8
+    Height = 15
+    Top = 76
+    Width = 49
+    Caption = 'GapLabel'
+  end
+  object DepthLabel: TLabel
+    AnchorSideTop.Control = DepthBox
+    AnchorSideTop.Side = asrCenter
+    Left = 8
+    Height = 15
+    Top = 108
+    Width = 60
+    Caption = 'DepthLabel'
+  end
+  object TableLabel: TLabel
+    AnchorSideLeft.Control = PlateTable
+    AnchorSideLeft.Side = asrCenter
+    Left = 127
+    Height = 15
+    Top = 136
+    Width = 55
+    Caption = 'TableLabel'
+  end
+  object SteelOnlyBox: TCheckBox
+    Left = 8
+    Height = 19
+    Top = 288
+    Width = 88
+    Caption = 'SteelOnlyBox'
+    TabOrder = 6
+  end
+  object MemoOutput: TMemo
+    Left = 308
+    Height = 355
+    Top = 8
+    Width = 484
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    ReadOnly = True
+    ScrollBars = ssAutoVertical
+    TabOrder = 7
+  end
+  object Hz60Box: TCheckBox
+    Left = 8
+    Height = 19
+    Top = 312
+    Width = 64
+    Caption = 'Hz60Box'
+    TabOrder = 8
+  end
+  object MainMenu1: TMainMenu
+    Left = 184
+    Top = 368
+    object GuiMenu: TMenuItem
+      Caption = 'GuiMenu'
+    end
+    object OutMenu: TMenuItem
+      Caption = 'OutMenu'
+    end
+  end
+end

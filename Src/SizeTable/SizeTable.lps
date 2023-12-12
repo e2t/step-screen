@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="12"/>
+    <BuildModes Active="Default"/>
+    <Units>
+      <Unit>
+        <Filename Value="SizeTable.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <TopLine Value="3"/>
+        <CursorPos X="16" Y="28"/>
+        <UsageCount Value="21"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Model"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="198"/>
+        <CursorPos X="32" Y="242"/>
+        <UsageCount Value="21"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\Shared\optional.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <WindowIndex Value="-1"/>
+        <TopLine Value="-1"/>
+        <CursorPos X="-1" Y="-1"/>
+        <UsageCount Value="21"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\StepScreen\umodelpresenter.pas"/>
+        <UnitName Value="UModelPresenter"/>
+        <EditorIndex Value="1"/>
+        <CursorPos X="4" Y="9"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\..\Shared\floatutils.pas"/>
+        <UnitName Value="FloatUtils"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="10" Y="22"/>
+        <UsageCount Value="10"/>
+      </Unit>
+    </Units>
+    <JumpHistory HistoryIndex="12">
+      <Position>
+        <Filename Value="SizeTable.lpr"/>
+        <Caret Line="4" Column="6"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="9" Column="9"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="187" Column="13" TopLine="172"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="747" Column="12" TopLine="717"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="12" Column="31"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="46" Column="17" TopLine="34"/>
+      </Position>
+      <Position>
+        <Filename Value="SizeTable.lpr"/>
+        <Caret Line="9" Column="7"/>
+      </Position>
+      <Position>
+        <Filename Value="SizeTable.lpr"/>
+        <Caret Line="16" Column="27"/>
+      </Position>
+      <Position>
+        <Filename Value="SizeTable.lpr"/>
+        <Caret Line="34" Column="31" TopLine="5"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="230" TopLine="213"/>
+      </Position>
+      <Position>
+        <Filename Value="SizeTable.lpr"/>
+        <Caret Line="20" Column="33" TopLine="2"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="230" TopLine="213"/>
+      </Position>
+      <Position>
+        <Filename Value="..\StepScreen\model.pas"/>
+        <Caret Line="252" Column="10" TopLine="234"/>
+      </Position>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes ActiveMode=""/>
+    </RunParams>
+  </ProjectSession>
+</CONFIG>
