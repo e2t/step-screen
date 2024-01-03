@@ -2,7 +2,8 @@
 
 Desktop GUI application for calculating step screen.
 
-![image](https://user-images.githubusercontent.com/28775275/219672662-69e7e660-7cc6-4e74-9f06-dc36fbb233d6.png)
+![image](https://github.com/e2t/step-screen/assets/28775275/75f02ef1-7163-4a9f-994c-3bec0bd5939f)
+
 
 
 ## License
