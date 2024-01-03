@@ -7,7 +7,7 @@ interface
 uses
   Errors,
   Fgl,
-  UModelPresenter;
+  UPresenter;
 
 type
   EInputDataError = class(ELoggedError);
@@ -61,8 +61,7 @@ uses
   Nullable,
   Optional,
   SysUtils,
-  TextError,
-  TextOut;
+  Texts;
 
 type
   TDrive = record
@@ -81,7 +80,7 @@ type
 
   TWeightSet = class;
 
-  TStepScreenCalculator = class sealed
+  TStepScreen = class sealed
   private
     FPresenter: IModelPresenter;
     FSpacer: TSpacer;
@@ -125,17 +124,17 @@ type
     FRubberScreen, FFixedPlates, FMovingPlates, FPlastic, FMoving, FFull,
     FPlateless: ValReal;
 
-    procedure CalcFull(const AScr: TStepScreenCalculator);
+    procedure CalcFull(const AScr: TStepScreen);
   public
-    constructor Create(const AScr: TStepScreenCalculator);
+    constructor Create(const AScr: TStepScreen);
   end;
 
 const
   TeethXX21 = 41;
 
 var
-  DoublePlasticPlates: specialize TFPGMap<ValReal, TPlatePair>;
-  SinglePlasticPlates: specialize TFPGMap<ValReal, ValReal>;
+  PlasticPlatePairs: specialize TFPGMap<ValReal, TPlatePair>;
+  PlasticSinglePlates: specialize TFPGMap<ValReal, ValReal>;
   DriveUnits50Hz05XX, DriveUnits60Hz05XX: array [0..1] of TDrive;
   DriveUnits50Hz, DriveUnits60Hz: array [0..3] of TDrive;
 
@@ -146,33 +145,24 @@ var
   PlasticSheetLength, PlatesPerSheet, TiltAngle, TeethStepY, TeethStepX,
   FixedBeamStep, MovingBeamStep: ValReal;
 
-procedure AddHeightSerie(Hs: Integer; DiffTeeth: Integer);
-var
-  X: THsData;
+function NewHsData(DiffTeeth: Integer): THsData;
 begin
-  X.DiffTeeth := DiffTeeth;
-  HeightSeries.Add(Hs, X);
+  Result.DiffTeeth := DiffTeeth;
 end;
 
-procedure AddGapAndSpacer(Gap: ValReal; Material: TMaterial; Weight: ValReal;
-  Designation: String; Thickness: ValReal);
-var
-  X: TSpacer;
+function NewSpacer(Material: TMaterial; Weight: ValReal; Designation: String;
+  Thickness: ValReal): TSpacer;
 begin
-  X.Material := Material;
-  X.Weight := Weight;
-  X.Designation := Designation;
-  X.S := Thickness;
-  NominalGapsWithPlasticSpacers.Add(Gap, X);
+  Result.Material := Material;
+  Result.Weight := Weight;
+  Result.Designation := Designation;
+  Result.S := Thickness;
 end;
 
-procedure AddPlatePair(Summa, Fixed, Moving: ValReal);
-var
-  X: TPlatePair;
+function NewPlatePair(Fixed, Moving: ValReal): TPlatePair;
 begin
-  X.Fixed := Fixed;
-  X.Moving := Moving;
-  DoublePlasticPlates.Add(Summa, X);
+  Result.Fixed := Fixed;
+  Result.Moving := Moving;
 end;
 
 procedure CalcAllSizes(APresenter: IModelPresenter);
@@ -183,30 +173,34 @@ var
   Count: Integer = 0;
   Gaps: array of ValReal = nil;
   Gap: ValReal;
-  Scr: TStepScreenCalculator;
+  Scr: TStepScreen;
   Inp: TInputData;
 begin
   SetLength(Gaps, NominalGapsWithPlasticSpacers.Count + Length(NonPlasticGaps));
   for I := 0 to NominalGapsWithPlasticSpacers.Count - 1 do
     Gaps[I] := NominalGapsWithPlasticSpacers.Keys[I];
-  for Gap in NonPlasticGaps do begin
+  for Gap in NonPlasticGaps do
+  begin
     Inc(I);
     Gaps[I] := Gap;
   end;
 
-  for I := 0 to HeightSeries.Count - 1 do begin
+  for I := 0 to HeightSeries.Count - 1 do
+  begin
     Inp.Hs := HeightSeries.Keys[I];
     Inp.Depth := Inp.Hs * 0.1;
     for Inp.Ws in TWidthSeries do
       for Inp.NominalGap in Gaps do
         for Inp.PlateAndSpacer in PlatesAndSpacers do
           for Inp.IsSteelOnly in FalseTrue do
-            for Inp.Is60Hz in FalseTrue do begin
+            for Inp.Is60Hz in FalseTrue do
+            begin
               try
-                Scr := TStepScreenCalculator.Create(Inp, APresenter);
+                Scr := TStepScreen.Create(Inp, APresenter);
                 Inc(Count);
               except
-                on EInputDataError do ;
+                on EInputDataError do
+                  { nothing };
               end;
               FreeAndNil(Scr);
             end;
@@ -217,7 +211,7 @@ end;
 procedure CalcSizeTable(APresenter: IModelPresenter);
 var
   I: Integer;
-  Scr: TStepScreenCalculator;
+  Scr: TStepScreen;
   Inp: TInputData;
 begin
   Inp.NominalGap := NominalGapsWithPlasticSpacers.Keys[0];
@@ -229,9 +223,10 @@ begin
   Inp.Hs := 21;
   Inp.Depth := Inp.Hs * 0.1;
   APresenter.AddOutput('Size'#9'A'#9'B'#9'G');
-  for Inp.Ws in TWidthSeries do begin
+  for Inp.Ws in TWidthSeries do
+  begin
     try
-      Scr := TStepScreenCalculator.Create(Inp, APresenter);
+      Scr := TStepScreen.Create(Inp, APresenter);
       APresenter.AddOutput(Format('%0.2dYY'#9'%s'#9'%s'#9'%s',
         [Scr.FWs,
         FStr(FromSI('mm', Scr.FInnerWidth)),
@@ -248,11 +243,12 @@ begin
   { YYSerie }
   Inp.Ws := 10;
   APresenter.AddOutput('Size'#9'L'#9'R'#9'H2'#9'H1'#9'F'#9'D');
-  for I := 0 to HeightSeries.Count - 1 do begin
+  for I := 0 to HeightSeries.Count - 1 do
+  begin
     Inp.Hs := HeightSeries.Keys[I];
     Inp.Depth := Inp.Hs * 0.1;
     try
-      Scr := TStepScreenCalculator.Create(Inp, APresenter);
+      Scr := TStepScreen.Create(Inp, APresenter);
       APresenter.AddOutput(Format('XX%0.2d'#9'%s'#9'%s'#9'%s'#9'%s'#9'%s'#9'%s',
         [Scr.FHs,
         FStr(FromSI('mm', Scr.FLength), 0),
@@ -262,7 +258,8 @@ begin
         FStr(FromSI('mm', Scr.FAxeX), 0),
         FStr(FromSI('mm', Scr.FHorizLength), 0)]));
     except
-      on EInputDataError do ;
+      on EInputDataError do
+        { nothing };
     end;
     FreeAndNil(Scr);
   end;
@@ -281,16 +278,17 @@ end;
 
 procedure CalcStepScreen(const Inp: TInputData; Prs: IModelPresenter);
 var
-  Scr: TStepScreenCalculator;
+  Scr: TStepScreen;
   I: Integer;
 begin
-  Scr := TStepScreenCalculator.Create(Inp, Prs);
+  Scr := TStepScreen.Create(Inp, Prs);
   Prs.AddOutput(TextOutRskGapDepth, [Scr.FWs, Scr.FHs,
     FStr(FromSI('mm', Scr.FGap), -2),
     FStr(FromSI('mm', Scr.FSteelFixed.S)),
     FStr(FromSI('mm', Scr.FSteelMoving.S)),
     FStr(FromSI('mm', Scr.FDepth))]);
-  if Scr.FDrive.HasValue then begin
+  if Scr.FDrive.HasValue then
+  begin
     Prs.AddOutput(TextOutWeight, [FStr(Scr.FWeight.FFull, 0)]);
     Prs.AddOutput(TextOutDrive, [Scr.FDrive.Value.Designation,
       FStr(FromSI('kW', Scr.FDrive.Value.Power)),
@@ -298,7 +296,8 @@ begin
       FStr(FromSI('rpm', Scr.FDrive.Value.Speed)),
       FStr(Scr.FDrive.Value.Torque)]);
   end
-  else begin
+  else
+  begin
     Prs.AddOutput(TextOutDrivelessWeight, [FStr(Scr.FWeight.FFull, 0)]);
     Prs.AddOutput(TextOutUndefDrive, []);
   end;
@@ -306,7 +305,8 @@ begin
   Prs.AddOutput(TextOutExtWidth, [FStr(FromSI('mm', Scr.FOuterWidth), 0)]);
   Prs.AddOutput(TextOutIntWidth, [FStr(FromSI('mm', Scr.FInnerWidth), 0)]);
   Prs.AddOutput(TextOutDropWidth, [FStr(FromSI('mm', Scr.FDropWidth), 0)]);
-  Prs.AddOutput(TextOutFullDropHeight, [FStr(FromSI('mm', Scr.FFullDropHeight), 0)]);
+  Prs.AddOutput(TextOutFullDropHeight,
+    [FStr(FromSI('mm', Scr.FFullDropHeight), 0)]);
   Prs.AddOutput(TextOutDropHeight, [FStr(FromSI('mm', Scr.FDropHeight), 0)]);
   Prs.AddOutput(TextOutScrHeight, [FStr(FromSI('mm', Scr.FHeight), 0)]);
   Prs.AddOutput(TextOutScrLength, [FStr(FromSI('mm', Scr.FLength), 0)]);
@@ -318,20 +318,25 @@ begin
   Prs.AddOutput('');
   Prs.AddOutput(TextOutMinSideGap, [FStr(FromSI('mm', Scr.FMinSideGap), -2)]);
   if Scr.FSpacer.Designation <> '' then
-    Prs.AddOutput(TextOutPlasticSpacers, [Scr.FSpacerCount, Scr.FSpacer.Designation])
+    Prs.AddOutput(TextOutPlasticSpacers,
+      [Scr.FSpacerCount, Scr.FSpacer.Designation])
   else
     Prs.AddOutput(TextOutSteelSpacers, [Scr.FSpacerCount]);
   Prs.AddOutput(TextOutMovingCount, [Scr.FMovingCount]);
   Prs.AddOutput(TextOutSteelS, [FStr(FromSI('mm', Scr.FSteelMoving.S))]);
   if Scr.FPlasticMoving.HasValue then
-    Prs.AddOutput(TextOutPlasticS, [FStr(FromSI('mm', Scr.FPlasticMoving.Value.S))]);
+    Prs.AddOutput(TextOutPlasticS,
+      [FStr(FromSI('mm', Scr.FPlasticMoving.Value.S))]);
   Prs.AddOutput(TextOutFixedCount, [Scr.FFixedCount]);
   Prs.AddOutput(TextOutSteelS, [FStr(FromSI('mm', Scr.FSteelFixed.S))]);
   if Scr.FPlasticFixed.HasValue then
-    Prs.AddOutput(TextOutPlasticS, [FStr(FromSI('mm', Scr.FPlasticFixed.Value.S))]);
+    Prs.AddOutput(TextOutPlasticS,
+      [FStr(FromSI('mm', Scr.FPlasticFixed.Value.S))]);
   for I := 0 to Scr.FPlasticSheet.Count - 1 do
-    Prs.AddOutput(TextOutPlasticSheet, [FStr(FromSI('mm', Scr.FPlasticSheet.Keys[I])),
-      Scr.FPlasticSheet.Data[I], FStr(PlasticSheetWidth), FStr(PlasticSheetLength)]);
+    Prs.AddOutput(TextOutPlasticSheet,
+      [FStr(FromSI('mm', Scr.FPlasticSheet.Keys[I])),
+      Scr.FPlasticSheet.Data[I], FStr(PlasticSheetWidth),
+      FStr(PlasticSheetLength)]);
   Prs.AddOutput(TextOutMovingWeight, [FStr(Scr.FWeight.FMoving, 0)]);
   if IsGreater(Scr.FWeight.FPlastic, 0) then
     Prs.AddOutput(TextOutPlasticWeight, [FStr(Scr.FWeight.FPlastic, 0)]);
@@ -420,6 +425,7 @@ begin
   Prs.AddOutput(Format(
     '"dpw_count" = %d  ''''Вікно скидання: кількість вікон',
     [Scr.FDpwCount]));
+  FreeAndNil(Scr);
 end;
 
 function CalcPlasticSheet(PlateCount: Integer): Integer;
@@ -429,21 +435,21 @@ end;
 
 { TStepScreenCalculator }
 
-constructor TStepScreenCalculator.Create(const Inp: TInputData;
+constructor TStepScreen.Create(const Inp: TInputData;
   APresenter: IModelPresenter);
 var
+  Gaps: array of String = nil;
+  I, DiffTeeth, PmbIntNumber: Integer;
+  DoublePlastic: TPlatePair;
   OptimalGap, MaxDepth, SidePlasticGap, AxeY, BetwExtremeBeamsFixed,
   BetwExtremeBeamsMoving, PmbApproxStart, PmbMaxStep, DpbMaxStep,
   PmbApproxWorkWidth, PmbFloatNumber, DpcMaxSize, DpwBridge,
   ApproxDpbMaxSize: ValReal;
-
-  Gaps: array of String = nil;
-  I, DiffTeeth, PmbIntNumber: Integer;
-  DoublePlastic: TPlatePair;
 begin
   FPresenter := APresenter;
 
-  if IsLessOrEqual(Inp.Depth, 0) then begin
+  if IsLessOrEqual(Inp.Depth, 0) then
+  begin
     FPresenter.LogError(TextErrDepth, []);
     raise ELoggedError.Create('Invalid depth');
   end;
@@ -455,9 +461,11 @@ begin
   FOuterWidth := FWs * 0.1 + 0.05;
   FInnerWidth := FWs * 0.1 - 0.07;
 
-  if Inp.PlateAndSpacer.Spacer = Plastic then begin
+  if Inp.PlateAndSpacer.Spacer = Plastic then
+  begin
     OptimalGap := Inp.NominalGap;
-    if NominalGapsWithPlasticSpacers.IndexOf(Inp.NominalGap) = -1 then begin
+    if NominalGapsWithPlasticSpacers.IndexOf(Inp.NominalGap) = -1 then
+    begin
       SetLength(Gaps, NominalGapsWithPlasticSpacers.Count);
       for I := 0 to NominalGapsWithPlasticSpacers.Count - 1 do
         Gaps[I] := FStr(FromSI('mm', NominalGapsWithPlasticSpacers.Keys[I]));
@@ -466,7 +474,8 @@ begin
     end;
     FSpacer := NominalGapsWithPlasticSpacers.KeyData[Inp.NominalGap];
   end
-  else begin
+  else
+  begin
     OptimalGap := Inp.NominalGap + SteelGapMin;
     FSpacer := NewSteelSpacer(Inp.NominalGap);
   end;
@@ -478,24 +487,28 @@ begin
   FSteelMoving.S := Inp.PlateAndSpacer.Moving;
 
   FOptimalStep := 2 * OptimalGap + FSteelFixed.S + FSteelMoving.S;
-  if Inp.IsSteelOnly then begin
+  if Inp.IsSteelOnly then
+  begin
     FSteelFixed.Teeth := FAllTeeth;
     FSteelMoving.Teeth := FAllTeeth;
     FPlasticFixed.HasValue := False;
     FPlasticMoving.HasValue := False;
     CalcMovingCountAndStep(FSteelFixed.S, FMovingCount, FStep);
   end
-  else begin
+  else
+  begin
     FSteelFixed.Teeth := Max(11, Round(12.53 * FDepth - 3.1415));
     FPlasticFixed.HasValue := True;
     FPlasticFixed.Value.Teeth := FAllTeeth - FSteelFixed.Teeth;
-    if FHs < 9 then begin
+    if FHs < 9 then
+    begin
       FSteelMoving.Teeth := FAllTeeth;
       FPlasticFixed.Value.S := CalcSinglePlastic;
       FPlasticMoving.HasValue := False;
       CalcMovingCountAndStep(FSteelFixed.S, FMovingCount, FStep);
     end
-    else begin
+    else
+    begin
       FSteelMoving.Teeth := FSteelFixed.Teeth + 2;
       FPlasticMoving.HasValue := True;
       FPlasticMoving.Value.Teeth := FAllTeeth - FSteelMoving.Teeth;
@@ -511,7 +524,8 @@ begin
   FBottomSpacerCount := FFixedCount * 2;
   FFullDropHeight := StartFullDropHeight + DiffTeeth * TeethStepY;
   FDropHeight := FFullDropHeight - FDepth;
-  if IsLess(FDropHeight, MinDischargeHeight) then begin
+  if IsLess(FDropHeight, MinDischargeHeight) then
+  begin
     MaxDepth := FFullDropHeight - MinDischargeHeight;
     FPresenter.LogError(TextErrTooDeep, [FStr(Floor(FromSI('mm', MaxDepth)))]);
     raise ELoggedError.Create('Too deep channel');
@@ -519,7 +533,8 @@ begin
   FSideSteelGap := CalcSideGap(FSteelMoving.S);
   FFixedStart := FSideSteelGap + FSteelMoving.S + FGap + FSteelFixed.S / 2;
   FMovingStart := FSideSteelGap + FSteelMoving.S / 2;
-  if FPlasticMoving.HasValue then begin
+  if FPlasticMoving.HasValue then
+  begin
     SidePlasticGap := CalcSideGap(FPlasticMoving.Value.S);
     FMinSideGap := Min(SidePlasticGap, FSideSteelGap);
   end
@@ -614,47 +629,48 @@ begin
   FDpwStep := FDpwWidth + DpwBridge;
 end;
 
-destructor TStepScreenCalculator.Destroy;
+destructor TStepScreen.Destroy;
 begin
   FreeAndNil(FPlasticSheet);
   FreeAndNil(FWeight);
+  inherited Destroy;
 end;
 
-procedure TStepScreenCalculator.CalcMovingCountAndStep(AFixedS: ValReal;
+procedure TStepScreen.CalcMovingCountAndStep(AFixedS: ValReal;
   out AMovCount: Integer; out AStep: ValReal);
 begin
   AMovCount := Floor((FInnerWidth + AFixedS) / FOptimalStep);
   AStep := (FInnerWidth + AFixedS) / AMovCount;
 end;
 
-function TStepScreenCalculator.CalcSinglePlastic: ValReal;
+function TStepScreen.CalcSinglePlastic: ValReal;
 var
   OptimalSpace, Space, Gap: ValReal;
 begin
   OptimalSpace := FOptimalStep - FSteelMoving.S - 2 * PlasticGapMin;
   Space := SI(Floor(FromSI('mm', OptimalSpace)), 'mm');
-  Result := SinglePlasticPlates.KeyData[Space];
+  Result := PlasticSinglePlates.KeyData[Space];
   Gap := (FOptimalStep - Result - FSteelMoving.S) / 2;
   Assert(IsLessOrEqual(Gap, PlasticGapMax));
 end;
 
-function TStepScreenCalculator.CalcDoublePlastic: TPlatePair;
+function TStepScreen.CalcDoublePlastic: TPlatePair;
 var
   OptimalSpace, Space, Gap: ValReal;
 begin
   OptimalSpace := FOptimalStep - 2 * PlasticGapMin;
   Space := SI(Floor(FromSI('mm', OptimalSpace)), 'mm');
-  Result := DoublePlasticPlates.KeyData[Space];
+  Result := PlasticPlatePairs.KeyData[Space];
   Gap := (FOptimalStep - Result.Fixed - Result.Moving) / 2;
   Assert(IsLessOrEqual(Gap, PlasticGapMax));
 end;
 
-function TStepScreenCalculator.CalcSideGap(MovingS: ValReal): ValReal;
+function TStepScreen.CalcSideGap(MovingS: ValReal): ValReal;
 begin
   Result := (FInnerWidth - MovingS - FStep * FFixedCount) / 2;
 end;
 
-function TStepScreenCalculator.CalcMinTorque: ValReal;
+function TStepScreen.CalcMinTorque: ValReal;
 const
   UnaccountedLoad = 2.3;  { Коэффициент неучтенных нагрузок }
 begin
@@ -663,12 +679,13 @@ begin
   Result := FWeight.FMoving * UnaccountedLoad * GravAcc * LeverArm;
 end;
 
-procedure TStepScreenCalculator.CalcDrive(Is60Hz: Boolean);
+procedure TStepScreen.CalcDrive(Is60Hz: Boolean);
 var
   Drives: array of TDrive;
   I: TDrive;
 begin
-  if Is60Hz then begin
+  if Is60Hz then
+  begin
     if FWs <= 5 then
       Drives := DriveUnits60Hz05XX
     else
@@ -681,7 +698,8 @@ begin
   FDrive.HasValue := False;
 
   for I in Drives do
-    if IsGreaterOrEqual(I.Torque, FMinTorque) then begin
+    if IsGreaterOrEqual(I.Torque, FMinTorque) then
+    begin
       FDrive.Value := I;
       FDrive.HasValue := True;
       break;
@@ -690,10 +708,9 @@ end;
 
 { TWeightSet }
 
-constructor TWeightSet.Create(const AScr: TStepScreenCalculator);
+constructor TWeightSet.Create(const AScr: TStepScreen);
 var
   PlasticFixed, PlasticMoving: specialize TNullable<ValReal>;
-
   PitmanArm, FixingStrip, ConnectingRod, PlateClipMoving, PlateBeamMoving,
   ParallelogramBeam, MovingLengthWiseBeam, BottomSpacer, SteelFixed, FixPl,
   SteelMoving, MovPl: ValReal;
@@ -732,40 +749,44 @@ begin
   MovingLengthWiseBeam := 1.15667 * AScr.FHs + 4.45;
   FSideCover := 8.67532 * AScr.FDropHeight + 12.498;
   BottomSpacer := 110 * AScr.FBottomSpacerS - 0.01;
-  FBackBottomCover := 1.53726 * AScr.FWs * AScr.FDropHeight
-    + 0.0213454 * AScr.FWs + 4.82597 * AScr.FDropHeight - 2.0444;
+  FBackBottomCover := 1.53726 * AScr.FWs * AScr.FDropHeight +
+    0.0213454 * AScr.FWs + 4.82597 * AScr.FDropHeight - 2.0444;
   FHose := 0.06 * AScr.FHs + 0.27;
   FRubberScreen := 2.94 * AScr.FDepth - 0.361;
 
-  if AScr.FPlasticFixed.HasValue then begin
-    SteelFixed := 75 * AScr.FSteelFixed.S * AScr.FSteelFixed.Teeth
-      + 215 * AScr.FSteelFixed.S;
+  if AScr.FPlasticFixed.HasValue then
+  begin
+    SteelFixed := 75 * AScr.FSteelFixed.S * AScr.FSteelFixed.Teeth +
+      215 * AScr.FSteelFixed.S;
     PlasticFixed.Value :=
-      8.88889 * AScr.FPlasticFixed.Value.S * AScr.FPlasticFixed.Value.Teeth
-      + 14.4444 * AScr.FPlasticFixed.Value.S;
+      8.88889 * AScr.FPlasticFixed.Value.S * AScr.FPlasticFixed.Value.Teeth +
+      14.4444 * AScr.FPlasticFixed.Value.S;
     FixPl := SteelFixed + PlasticFixed.Value;
   end
-  else begin
-    SteelFixed := 73.3333 * AScr.FSteelFixed.S * AScr.FSteelFixed.Teeth
-      + 653.333 * AScr.FSteelFixed.S;
+  else
+  begin
+    SteelFixed := 73.3333 * AScr.FSteelFixed.S * AScr.FSteelFixed.Teeth +
+      653.333 * AScr.FSteelFixed.S;
     PlasticFixed.Clear;
     FixPl := SteelFixed;
   end;
-  FFixedPlates := AScr.FFixedCount * FixPl
-    + AScr.FSpacerCount * AScr.FSpacer.Weight
-    + BottomSpacer * AScr.FBottomSpacerCount;
+  FFixedPlates := AScr.FFixedCount * FixPl +
+    AScr.FSpacerCount * AScr.FSpacer.Weight +
+    BottomSpacer * AScr.FBottomSpacerCount;
 
-  if AScr.FPlasticMoving.HasValue then begin
-    SteelMoving := 73.3333 * AScr.FSteelMoving.S * AScr.FSteelMoving.Teeth
-      + 230 * AScr.FSteelMoving.S;
+  if AScr.FPlasticMoving.HasValue then
+  begin
+    SteelMoving := 73.3333 * AScr.FSteelMoving.S * AScr.FSteelMoving.Teeth +
+      230 * AScr.FSteelMoving.S;
     PlasticMoving :=
-      6.66667 * AScr.FPlasticMoving.Value.S * AScr.FPlasticMoving.Value.Teeth
-      + 40 * AScr.FPlasticMoving.Value.S;
+      6.66667 * AScr.FPlasticMoving.Value.S * AScr.FPlasticMoving.Value.Teeth +
+      40 * AScr.FPlasticMoving.Value.S;
     MovPl := SteelMoving + PlasticMoving.Value;
   end
-  else begin
-    SteelMoving := 73.3333 * AScr.FSteelMoving.S * AScr.FSteelMoving.Teeth
-      + 613.333 * AScr.FSteelMoving.S;
+  else
+  begin
+    SteelMoving := 73.3333 * AScr.FSteelMoving.S * AScr.FSteelMoving.Teeth +
+      613.333 * AScr.FSteelMoving.S;
     PlasticMoving.Clear;
     MovPl := SteelMoving;
   end;
@@ -778,55 +799,55 @@ begin
   if PlasticMoving.HasValue then
     FPlastic := FPlastic + PlasticMoving.Value * AScr.FMovingCount;
 
-  FMoving := FMovingPlates
-    + SI(5.78, 'kg')
-    + FixingStrip * 4
-    + PitmanArm * 2
-    + PlateBeamMoving * AScr.FBeamCountMoving
-    + PlateClipMoving * AScr.FBeamCountMoving
-    + MovingLengthWiseBeam * 2
-    + ParallelogramBeam * 2
-    + ConnectingRod * 8;
+  FMoving := FMovingPlates +
+    SI(5.78, 'kg') +
+    FixingStrip * 4 +
+    PitmanArm * 2 +
+    PlateBeamMoving * AScr.FBeamCountMoving +
+    PlateClipMoving * AScr.FBeamCountMoving +
+    MovingLengthWiseBeam * 2 +
+    ParallelogramBeam * 2 +
+    ConnectingRod * 8;
 
   { After CalcFull() }
   FFull := 0;
   FPlateless := 0;
 end;
 
-procedure TWeightSet.CalcFull(const AScr: TStepScreenCalculator);
+procedure TWeightSet.CalcFull(const AScr: TStepScreen);
 begin
-  FFull := FMoving
-    + FFixedPlates
-    + SI(2.73, 'kg')
-    + FButtonPost
-    + FSupport * 2
-    + FPinSensor
-    + FAnchors
-    + FDriveSupport
-    + FChute
-    + FAirSupply
-    + FStirringUp * 2
-    + FFrontCover00
-    + FFrontCover01
-    + FTopCover
-    + FBackCover
-    + FTopCoverFixedBeam
-    + FFrontCover00FixedBeam
-    + FFrontCover01FixedBeam
-    + FSideCover * 2
-    + FBackBottomCover
-    + FTerminalBox
-    + FCrank * 2
-    + FBottomFlap
-    + FBottomRake
-    + FPlateClipFixed * AScr.FBeamCountFixed
-    + FPlateBeamFixed * AScr.FBeamCountFixed
-    + FBottomFrameBeam
-    + FMiddleFrameBeam
-    + FTopFrameBeam
-    + FSideWall * 2
-    + FHose * 2
-    + FRubberScreen * 2;
+  FFull := FMoving +
+    FFixedPlates +
+    SI(2.73, 'kg') +
+    FButtonPost +
+    FSupport * 2 +
+    FPinSensor +
+    FAnchors +
+    FDriveSupport +
+    FChute +
+    FAirSupply +
+    FStirringUp * 2 +
+    FFrontCover00 +
+    FFrontCover01 +
+    FTopCover +
+    FBackCover +
+    FTopCoverFixedBeam +
+    FFrontCover00FixedBeam +
+    FFrontCover01FixedBeam +
+    FSideCover * 2 +
+    FBackBottomCover +
+    FTerminalBox +
+    FCrank * 2 +
+    FBottomFlap +
+    FBottomRake +
+    FPlateClipFixed * AScr.FBeamCountFixed +
+    FPlateBeamFixed * AScr.FBeamCountFixed +
+    FBottomFrameBeam +
+    FMiddleFrameBeam +
+    FTopFrameBeam +
+    FSideWall * 2 +
+    FHose * 2 +
+    FRubberScreen * 2;
   if AScr.FDrive.HasValue then
     FFull := FFull + AScr.FDrive.Value.Weight;
   FPlateless := FFull - FFixedPlates - FMovingPlates;
@@ -834,73 +855,78 @@ end;
 
 initialization
   HeightSeries := specialize TFPGMap<Integer, THsData>.Create;
-  AddHeightSerie(6, -19);
-  AddHeightSerie(9, -15);
-  AddHeightSerie(12, -11);
-  AddHeightSerie(15, -7);
-  AddHeightSerie(18, -4);
-  AddHeightSerie(21, 0);
-  AddHeightSerie(24, 4);
-  AddHeightSerie(27, 8);
-  AddHeightSerie(30, 11);
-  //AddHeightSerie(33, 15);
+  HeightSeries.Add(6, NewHsData(-19));
+  HeightSeries.Add(9, NewHsData(-15));
+  HeightSeries.Add(12, NewHsData(-11));
+  HeightSeries.Add(15, NewHsData(-7));
+  HeightSeries.Add(18, NewHsData(-4));
+  HeightSeries.Add(21, NewHsData(0));
+  HeightSeries.Add(24, NewHsData(4));
+  HeightSeries.Add(27, NewHsData(8));
+  HeightSeries.Add(30, NewHsData(11));
+  //HeightSerie.Add(33, NewHsData(15));
 
   NominalGapsWithPlasticSpacers := specialize TFPGMap<valreal, TSpacer>.Create;
-  AddGapAndSpacer(SI(3, 'mm'), Plastic, SI(2.56, 'gram'), 'RSK130921.001-01',
-    SI(2.7, 'mm'));
-  AddGapAndSpacer(SI(6, 'mm'), Plastic, SI(4.66, 'gram'), 'RSK130921.001',
-    SI(5.7, 'mm'));
+  NominalGapsWithPlasticSpacers.Add(SI(3, 'mm'), NewSpacer(
+    Plastic, SI(2.56, 'gram'), 'RSK130921.001-01', SI(2.7, 'mm')));
+  NominalGapsWithPlasticSpacers.Add(SI(6, 'mm'), NewSpacer(
+    Plastic, SI(4.66, 'gram'), 'RSK130921.001', SI(5.7, 'mm')));
 
   NonPlasticGaps[0] := SI(5, 'mm');
 
-  with PlatesAndSpacers[0] do begin
+  with PlatesAndSpacers[0] do
+  begin
     Fixed := SI(2, 'mm');
     Moving := SI(3, 'mm');
     Spacer := Plastic;
   end;
-  with PlatesAndSpacers[1] do begin
+  with PlatesAndSpacers[1] do
+  begin
     Fixed := SI(2, 'mm');
     Moving := SI(2, 'mm');
     Spacer := Plastic;
   end;
-  with PlatesAndSpacers[2] do begin
+  with PlatesAndSpacers[2] do
+  begin
     Fixed := SI(3, 'mm');
     Moving := SI(3, 'mm');
     Spacer := Steel;
   end;
-  with PlatesAndSpacers[3] do begin
+  with PlatesAndSpacers[3] do
+  begin
     Fixed := SI(3, 'mm');
     Moving := SI(2, 'mm');
     Spacer := Steel;
   end;
-  with PlatesAndSpacers[4] do begin
+  with PlatesAndSpacers[4] do
+  begin
     Fixed := SI(2, 'mm');
     Moving := SI(2, 'mm');
     Spacer := Steel;
   end;
 
-  DoublePlasticPlates := specialize TFPGMap<ValReal, TPlatePair>.Create;
-  AddPlatePair(SI(9, 'mm'), SI(5, 'mm'), SI(4, 'mm'));
-  AddPlatePair(SI(10, 'mm'), SI(5, 'mm'), SI(5, 'mm'));
-  AddPlatePair(SI(11, 'mm'), SI(6, 'mm'), SI(5, 'mm'));
-  AddPlatePair(SI(12, 'mm'), SI(6, 'mm'), SI(6, 'mm'));
-  AddPlatePair(SI(13, 'mm'), SI(8, 'mm'), SI(5, 'mm'));
-  AddPlatePair(SI(14, 'mm'), SI(8, 'mm'), SI(6, 'mm'));
-  AddPlatePair(SI(15, 'mm'), SI(8, 'mm'), SI(6, 'mm'));
-  AddPlatePair(SI(16, 'mm'), SI(8, 'mm'), SI(8, 'mm'));
-  AddPlatePair(SI(17, 'mm'), SI(8, 'mm'), SI(8, 'mm'));
-  AddPlatePair(SI(18, 'mm'), SI(10, 'mm'), SI(8, 'mm'));
+  PlasticPlatePairs := specialize TFPGMap<ValReal, TPlatePair>.Create;
+  PlasticPlatePairs.Add(SI(9, 'mm'), NewPlatePair(SI(5, 'mm'), SI(4, 'mm')));
+  PlasticPlatePairs.Add(SI(10, 'mm'), NewPlatePair(SI(5, 'mm'), SI(5, 'mm')));
+  PlasticPlatePairs.Add(SI(11, 'mm'), NewPlatePair(SI(6, 'mm'), SI(5, 'mm')));
+  PlasticPlatePairs.Add(SI(12, 'mm'), NewPlatePair(SI(6, 'mm'), SI(6, 'mm')));
+  PlasticPlatePairs.Add(SI(13, 'mm'), NewPlatePair(SI(8, 'mm'), SI(5, 'mm')));
+  PlasticPlatePairs.Add(SI(14, 'mm'), NewPlatePair(SI(8, 'mm'), SI(6, 'mm')));
+  PlasticPlatePairs.Add(SI(15, 'mm'), NewPlatePair(SI(8, 'mm'), SI(6, 'mm')));
+  PlasticPlatePairs.Add(SI(16, 'mm'), NewPlatePair(SI(8, 'mm'), SI(8, 'mm')));
+  PlasticPlatePairs.Add(SI(17, 'mm'), NewPlatePair(SI(8, 'mm'), SI(8, 'mm')));
+  PlasticPlatePairs.Add(SI(18, 'mm'), NewPlatePair(SI(10, 'mm'), SI(8, 'mm')));
 
-  SinglePlasticPlates := specialize TFPGMap<ValReal, ValReal>.Create;
-  SinglePlasticPlates.Add(SI(7, 'mm'), SI(6, 'mm'));
-  SinglePlasticPlates.Add(SI(8, 'mm'), SI(8, 'mm'));
-  SinglePlasticPlates.Add(SI(9, 'mm'), SI(8, 'mm'));
-  SinglePlasticPlates.Add(SI(10, 'mm'), SI(10, 'mm'));
-  SinglePlasticPlates.Add(SI(11, 'mm'), SI(10, 'mm'));
-  SinglePlasticPlates.Add(SI(12, 'mm'), SI(12, 'mm'));
-  SinglePlasticPlates.Add(SI(13, 'mm'), SI(12, 'mm'));
-  SinglePlasticPlates.Add(SI(14, 'mm'), SI(14, 'mm'));
-  SinglePlasticPlates.Add(SI(15, 'mm'), SI(14, 'mm'));
+  PlasticSinglePlates := specialize TFPGMap<ValReal, ValReal>.Create;
+  PlasticSinglePlates.Add(SI(7, 'mm'), SI(6, 'mm'));
+  PlasticSinglePlates.Add(SI(8, 'mm'), SI(8, 'mm'));
+  PlasticSinglePlates.Add(SI(9, 'mm'), SI(8, 'mm'));
+  PlasticSinglePlates.Add(SI(10, 'mm'), SI(10, 'mm'));
+  PlasticSinglePlates.Add(SI(11, 'mm'), SI(10, 'mm'));
+  PlasticSinglePlates.Add(SI(12, 'mm'), SI(12, 'mm'));
+  PlasticSinglePlates.Add(SI(13, 'mm'), SI(12, 'mm'));
+  PlasticSinglePlates.Add(SI(14, 'mm'), SI(14, 'mm'));
+  PlasticSinglePlates.Add(SI(15, 'mm'), SI(14, 'mm'));
 
   { Плечо кривошипа. }
   LeverArm := SI(55, 'mm');
@@ -969,7 +995,8 @@ initialization
   FixedBeamStep := SI(800, 'mm');
   MovingBeamStep := SI(650, 'mm');
 
-  with DriveUnits50Hz05XX[0] do begin
+  with DriveUnits50Hz05XX[0] do
+  begin
     Designation := 'SK9022.1-80LP';
     Weight := SI(49, 'kg');
     Power := SI(0.75, 'kW');
@@ -977,7 +1004,8 @@ initialization
     Speed := SI(12, 'rpm');
     Frequency := SI(50, 'Hz');
   end;
-  with DriveUnits50Hz05XX[1] do begin
+  with DriveUnits50Hz05XX[1] do
+  begin
     Designation := 'SK9022.1-90SP';
     Weight := SI(54, 'kg');
     Power := SI(1.1, 'kW');
@@ -986,7 +1014,8 @@ initialization
     Frequency := SI(50, 'Hz');
   end;
 
-  with DriveUnits60Hz05XX[0] do begin
+  with DriveUnits60Hz05XX[0] do
+  begin
     Designation := 'SK9022.1-80LP';
     Weight := SI(49, 'kg');
     Power := SI(0.75, 'kW');
@@ -994,7 +1023,8 @@ initialization
     Speed := SI(15, 'rpm');
     Frequency := SI(60, 'Hz');
   end;
-  with DriveUnits60Hz05XX[1] do begin
+  with DriveUnits60Hz05XX[1] do
+  begin
     Designation := 'SK9022.1-90SP';
     Weight := SI(53, 'kg');
     Power := SI(1.1, 'kW');
@@ -1003,7 +1033,8 @@ initialization
     Frequency := SI(60, 'Hz');
   end;
 
-  with DriveUnits50Hz[0] do begin
+  with DriveUnits50Hz[0] do
+  begin
     Designation := 'SK9032.1-80LP';
     Weight := SI(69, 'kg');
     Power := SI(0.75, 'kW');
@@ -1011,7 +1042,8 @@ initialization
     Speed := SI(13, 'rpm');
     Frequency := SI(50, 'Hz');
   end;
-  with DriveUnits50Hz[1] do begin
+  with DriveUnits50Hz[1] do
+  begin
     Designation := 'SK9032.1-90SP';
     Weight := SI(73, 'kg');
     Power := SI(1.1, 'kW');
@@ -1019,7 +1051,8 @@ initialization
     Speed := SI(13, 'rpm');
     Frequency := SI(50, 'Hz');
   end;
-  with DriveUnits50Hz[2] do begin
+  with DriveUnits50Hz[2] do
+  begin
     Designation := 'SK9032.1-90LP';
     Weight := SI(75, 'kg');
     Power := SI(1.5, 'kW');
@@ -1027,7 +1060,8 @@ initialization
     Speed := SI(13, 'rpm');
     Frequency := SI(50, 'Hz');
   end;
-  with DriveUnits50Hz[3] do begin
+  with DriveUnits50Hz[3] do
+  begin
     Designation := 'SK9032.1-100LP';
     Weight := SI(83, 'kg');
     Power := SI(2.2, 'kW');
@@ -1036,7 +1070,8 @@ initialization
     Frequency := SI(50, 'Hz');
   end;
 
-  with DriveUnits60Hz[0] do begin
+  with DriveUnits60Hz[0] do
+  begin
     Designation := 'SK9032.1-80LP';
     Weight := SI(69, 'kg');
     Power := SI(0.75, 'kW');
@@ -1044,7 +1079,8 @@ initialization
     Speed := SI(16, 'rpm');
     Frequency := SI(60, 'Hz');
   end;
-  with DriveUnits60Hz[1] do begin
+  with DriveUnits60Hz[1] do
+  begin
     Designation := 'SK9032.1-90SP';
     Weight := SI(73, 'kg');
     Power := SI(1.1, 'kW');
@@ -1052,7 +1088,8 @@ initialization
     Speed := SI(16, 'rpm');
     Frequency := SI(60, 'Hz');
   end;
-  with DriveUnits60Hz[2] do begin
+  with DriveUnits60Hz[2] do
+  begin
     Designation := 'SK9032.1-90LP';
     Weight := SI(75, 'kg');
     Power := SI(1.5, 'kW');
@@ -1060,7 +1097,8 @@ initialization
     Speed := SI(16, 'rpm');
     Frequency := SI(60, 'Hz');
   end;
-  with DriveUnits60Hz[3] do begin
+  with DriveUnits60Hz[3] do
+  begin
     Designation := 'SK9032.1-100LP';
     Weight := SI(83, 'kg');
     Power := SI(2.2, 'kW');
@@ -1068,4 +1106,10 @@ initialization
     Speed := SI(16, 'rpm');
     Frequency := SI(60, 'Hz');
   end;
+
+finalization
+  FreeAndNil(HeightSeries);
+  FreeAndNil(NominalGapsWithPlasticSpacers);
+  FreeAndNil(PlasticPlatePairs);
+  FreeAndNil(PlasticSinglePlates);
 end.

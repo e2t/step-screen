@@ -16,7 +16,8 @@ implementation
 
 uses
   Fgl,
-  Math;
+  Math,
+  SysUtils;
 
 type
   TUnitConverter = record
@@ -70,19 +71,13 @@ begin
   Result := Value * 25.4;
 end;
 
-const
-  AsIs: TUnitConverter = (ToSI: @SameFloat; FromSI: @SameFloat);
-
 var
   ConverterDict: TConverterDict;
 
-procedure AddConverter(const Units: String; ToSI, FromSI: TFloatTransform);
-var
-  Uc: TUnitConverter;
+function NewUnitConverter(ToSI, FromSI: TFloatTransform): TUnitConverter;
 begin
-  Uc.ToSI := ToSI;
-  Uc.FromSI := FromSI;
-  ConverterDict.Add(Units, Uc);
+  Result.ToSI := ToSI;
+  Result.FromSI := FromSI;
 end;
 
 function ToSIConverter(const Units: String): TFloatTransform;
@@ -105,20 +100,26 @@ begin
   Result := ConverterDict.KeyData[Units].FromSI(Value);
 end;
 
+const
+  AsIs: TUnitConverter = (ToSI: @SameFloat; FromSI: @SameFloat);
+
 initialization
   ConverterDict := TConverterDict.Create;
   ConverterDict.Add('', AsIs);
-  AddConverter('deg', @DegToRad, @RadToDeg);
-  AddConverter('gram', @Reduce1e3, @Increase1e3);
+  ConverterDict.Add('deg', NewUnitConverter(@DegToRad, @RadToDeg));
+  ConverterDict.Add('gram', NewUnitConverter(@Reduce1e3, @Increase1e3));
   ConverterDict.Add('kg', AsIs);
-  AddConverter('kW', @Increase1e3, @Reduce1e3);
-  AddConverter('l/sec', @Reduce1e3, @Increase1e3);
+  ConverterDict.Add('kW', NewUnitConverter(@Increase1e3, @Reduce1e3));
+  ConverterDict.Add('l/sec', NewUnitConverter(@Reduce1e3, @Increase1e3));
   ConverterDict.Add('meter', AsIs);
-  AddConverter('mm', @Reduce1e3, @Increase1e3);
-  AddConverter('MPa', @Increase1e6, @Reduce1e6);
+  ConverterDict.Add('mm', NewUnitConverter(@Reduce1e3, @Increase1e3));
+  ConverterDict.Add('MPa', NewUnitConverter(@Increase1e6, @Reduce1e6));
   ConverterDict.Add('Nm', AsIs);
   ConverterDict.Add('rad', AsIs);
-  AddConverter('rpm', @Reduce60, @Increase60);
-  AddConverter('inch', @Reduce25_4, @Increase25_4);
+  ConverterDict.Add('rpm', NewUnitConverter(@Reduce60, @Increase60));
+  ConverterDict.Add('inch', NewUnitConverter(@Reduce25_4, @Increase25_4));
   ConverterDict.Add('Hz', AsIs);
+
+finalization
+  FreeAndNil(ConverterDict);
 end.

@@ -5,32 +5,78 @@ unit UPresenter;
 interface
 
 uses
-  UModelPresenter,
-  UViewPresenter;
+  BaseCalcApp,
+  Classes;
+
+type
+  {$interfaces CORBA}
+  IView = interface(IBaseView)
+    procedure FillWidthSeries(ASeries: TStrings);
+    procedure SetWidthSerie(AIndex: Integer);
+    procedure FillHeightSeries(ASeries: TStrings);
+    procedure SetHeightSerie(AIndex: Integer);
+    procedure FillGaps(ASeries: TStrings);
+    procedure SetGap(AIndex: Integer);
+    procedure FillColFixed(const AItems: array of String);
+    procedure FillColMoving(const AItems: array of String);
+    procedure FillColSpacer(const AItems: array of String);
+    procedure SetPlatesAndSpacers(AIndex: Integer);
+    procedure SetWsLabel(const AText: String);
+    procedure SetHsLabel(const AText: String);
+    procedure SetGapLabel(const AText: String);
+    procedure SetDepthLabel(const AText: String);
+    procedure SetPlateLabel(const AText: String);
+    procedure SetSteelOnlyLabel(const AText: String);
+    procedure SetHeaderFixed(const AText: String);
+    procedure SetHeaderMoving(const AText: String);
+    procedure SetHeaderSpacer(const AText: String);
+    procedure Set60HzLabel(const AText: String);
+    function GetWsIndex: Integer;
+    function GetHsIndex: Integer;
+    function GetGapIndex: Integer;
+    function GetDepthText: String;
+    function GetPlateIndex: Integer;
+    function GetSteelOnly: Boolean;
+    function GetIs60Hz: Boolean;
+  end;
+
+  IViewPresenter = interface(IBaseViewPresenter)
+  end;
+
+  IModelPresenter = interface(IBaseModelPresenter)
+  end;
 
 function NewPresenter(AView: IView): IViewPresenter;
 
 implementation
 
 uses
-  Classes,
-  Errors,
   Fgl,
   FloatUtils,
   L10n,
   MeasurementUtils,
   Model,
   SysUtils,
-  TextError,
-  TextUi,
-  UMsgQueue,
-  USettings;
+  Texts;
 
 type
-  TSubMenuSelector = procedure(AIndex: Integer) of object;
+  TPresenter = class sealed(IViewPresenter, IModelPresenter, ICorePresenter)
+  private
+    FCore: ICore;
+    FView: IView;
+    FInputData: TInputData;
+    FGapItems: specialize TFPGMap<String, ValReal>;
 
-  TPresenter = class sealed(TInterfacedObject, IViewPresenter, IModelPresenter)
+    { ICorePresenter }
+    procedure DoInitView;
+    procedure DoTranslateUi;
+    procedure GetInputData;
+    procedure Calculate;
+    procedure PrintResults;
+    procedure PrintErrors;
+    procedure ClearQueues;
     { IViewPresenter }
+    procedure InitView;
     procedure TranslateUi;
     procedure TranslateOut;
     procedure Run;
@@ -38,21 +84,6 @@ type
     procedure LogError(SpecMap: TTranslate; const Args: array of const);
     procedure AddOutput(SpecMap: TTranslate; const Args: array of const);
     procedure AddOutput(const AText: String);
-  private
-    FView: IView;
-    FUiLang, FOutLang: TLanguage;
-    FErrors, FResults: IMsgQueue;
-    FSettings: ISettingManager;
-    FGapItems: specialize TFPGMap<String, ValReal>;
-    procedure InitView;
-    procedure DoTranslateUi;
-    class procedure SelectLangMenuItem(ALang: TLanguage;
-      ALangs: array of TLanguage; AViewCall: TSubMenuSelector);
-    function GetInputData: TInputData;
-    procedure SetUiLang(Lang: TLanguage);
-    procedure SetOutLang(Lang: TLanguage);
-    procedure PrintErrors;
-    procedure PrintResults;
   public
     constructor Create(AView: IView);
     destructor Destroy; override;
@@ -61,12 +92,7 @@ type
 const
   UiLangs: array of TLanguage = (Eng, Ukr, Lit);
   OutLangs: array of TLanguage = (Eng, Ukr, Rus);
-  AppVersion = '23.3';
-
-function NewPresenter(AView: IView): IViewPresenter;
-begin
-  Result := TPresenter.Create(AView);
-end;
+  AppVersion = '24.1';
 
 function AppVendor: String;
 begin
@@ -78,46 +104,49 @@ begin
   Result := 'StepScreen';
 end;
 
-constructor TPresenter.Create(AView: IView);
+function NewPresenter(AView: IView): IViewPresenter;
 begin
-  FView := AView;
-  FErrors := NewMsgQueue(UiLangs);
-  FResults := NewMsgQueue(OutLangs);
-  FSettings := NewSettingManager(@AppName, @AppVendor);
-  SetUiLang(StrToLanguage(FSettings.GetUiLangCode, UiLangs[0]));
-  SetOutLang(StrToLanguage(FSettings.GetOutLangCode, OutLangs[0]));
+  Result := TPresenter.Create(AView);
+end;
 
-  InitView;
-  SelectLangMenuItem(FUiLang, UiLangs, @FView.SelectUiSubMenu);
-  SelectLangMenuItem(FOutLang, OutLangs, @FView.SelectOutSubMenu);
-  DoTranslateUi;
+{ TPresenter }
+
+constructor TPresenter.Create(AView: IView);
+var
+  I: Integer;
+  S: String;
+  F: ValReal;
+begin
+  FCore := NewCore(Self, AView, UiLangs, OutLangs, @AppName, @AppVendor,
+    AppVersion, TextUiTitle);
+  FView := AView;
+
+  FGapItems := specialize TFPGMap<String, ValReal>.Create;
+  for I := 0 to NominalGapsWithPlasticSpacers.Count - 1 do
+  begin
+    F := NominalGapsWithPlasticSpacers.Keys[I];
+    S := FStr(FromSI('mm', F));
+    FGapItems.Add(S, F);
+  end;
+  for F in NonPlasticGaps do
+  begin
+    S := FStr(FromSI('mm', F)) + '*';
+    FGapItems.Add(S, F);
+  end;
+  FGapItems.Sort;
 end;
 
 destructor TPresenter.Destroy;
 begin
   FreeAndNil(FGapItems);
+  inherited Destroy;
 end;
 
-procedure TPresenter.SetUiLang(Lang: TLanguage);
-begin
-  FUiLang := Lang;
-  FSettings.SetUiLangCode(Lang);
-end;
-
-procedure TPresenter.SetOutLang(Lang: TLanguage);
-begin
-  FOutLang := Lang;
-  FSettings.SetOutLangCode(Lang);
-end;
-
-procedure TPresenter.InitView;
+procedure TPresenter.DoInitView;
 var
   I: Integer;
   Sl: TStringList;
-  S: String;
-  L: TLanguage;
-  F: ValReal;
-  Plates: array [TPlateAndSpacerRange] of TStringList;
+  Sa: array [TPlateAndSpacerRange] of String;
 begin
   Sl := TStringList.Create;
   for I in TWidthSeries do
@@ -132,158 +161,120 @@ begin
   FView.SetHeightSerie(0);
 
   Sl.Clear;
-  FGapItems := specialize TFPGMap<String, ValReal>.Create;
-  for I := 0 to NominalGapsWithPlasticSpacers.Count - 1 do begin
-    S := FStr(FromSI('mm', NominalGapsWithPlasticSpacers.Keys[I]));
-    FGapItems.Add(S, NominalGapsWithPlasticSpacers.Keys[I]);
-  end;
-  for F in NonPlasticGaps do begin
-    S := FStr(FromSI('mm', F)) + '*';
-    FGapItems.Add(S, F);
-  end;
-  FGapItems.Sort;
   for I := 0 to FGapItems.Count - 1 do
     Sl.Add(FGapItems.Keys[I]);
   FView.FillGaps(Sl);
   FView.SetGap(0);
 
-  for I in TPlateAndSpacerRange do begin
-    Plates[I] := TStringList.Create;
-    Plates[I].Add(FStr(FromSI('mm', PlatesAndSpacers[I].Fixed)));
-    Plates[I].Add(FStr(FromSI('mm', PlatesAndSpacers[I].Moving)));
-    Plates[I].Add('');
-  end;
-  FView.FillPlates(Plates);
+  for I in TPlateAndSpacerRange do
+    Sa[I] := FStr(FromSI('mm', PlatesAndSpacers[I].Fixed));
+  FView.FillColFixed(Sa);
+  for I in TPlateAndSpacerRange do
+    Sa[I] := FStr(FromSI('mm', PlatesAndSpacers[I].Moving));
+  FView.FillColMoving(Sa);
   FView.SetPlatesAndSpacers(0);
 
-  Sl.Clear;
-  for L in UiLangs do
-    Sl.Add(LangNames.KeyData[L]);
-  FView.AddUiSubMenu(Sl);
-
-  Sl.Clear;
-  for L in OutLangs do
-    Sl.Add(LangNames.KeyData[L]);
-  FView.AddOutSubMenu(Sl);
-
   FreeAndNil(Sl);
-  for I in TPlateAndSpacerRange do
-    FreeAndNil(Plates[I]);
 end;
 
 procedure TPresenter.DoTranslateUi;
 var
   I: Integer;
   Sa: array [TPlateAndSpacerRange] of String;
+  UiLang: TLanguage;
 begin
-  FView.SetTitle(Format('%s - %s %s',
-    [TextUiTitle.KeyData[FUiLang], AppName, AppVersion]));
-  FView.SetRunLabel(TextUiRun.KeyData[FUiLang]);
-  FView.SetUiMenuLabel(TextUiMenu.KeyData[FUiLang]);
-  FView.SetOutMenuLabel(TextOutMenu.KeyData[FUiLang]);
-
-  FView.SetWsLabel(TextUiWs.KeyData[FUiLang]);
-  FView.SetHsLabel(TextUiHs.KeyData[FUiLang]);
-  FView.SetGapLabel(TextUiGap.KeyData[FUiLang]);
-  FView.SetDepthLabel(TextUiDep.KeyData[FUiLang]);
-  FView.SetPlateLabel(TextUiPlate.KeyData[FUiLang]);
-  FView.SetSteelOnlyLabel(TextUiSteelOnly.KeyData[FUiLang]);
-  FView.SetHeaderFixed(TextUiFixed.KeyData[FUiLang]);
-  FView.SetHeaderMoving(TextUiMoving.KeyData[FUiLang]);
-  FView.SetHeaderSpacer(TextUiSpacer.KeyData[FUiLang]);
-  FView.Set60HzLabel(TextUiFreq60Hz.KeyData[FUiLang]);
+  UiLang := FCore.UiLang;
+  FView.SetWsLabel(TextUiWs.KeyData[UiLang]);
+  FView.SetHsLabel(TextUiHs.KeyData[UiLang]);
+  FView.SetGapLabel(TextUiGap.KeyData[UiLang]);
+  FView.SetDepthLabel(TextUiDep.KeyData[UiLang]);
+  FView.SetPlateLabel(TextUiPlate.KeyData[UiLang]);
+  FView.SetSteelOnlyLabel(TextUiSteelOnly.KeyData[UiLang]);
+  FView.SetHeaderFixed(TextUiFixed.KeyData[UiLang]);
+  FView.SetHeaderMoving(TextUiMoving.KeyData[UiLang]);
+  FView.SetHeaderSpacer(TextUiSpacer.KeyData[UiLang]);
+  FView.Set60HzLabel(TextUiFreq60Hz.KeyData[UiLang]);
 
   for I in TPlateAndSpacerRange do
     if PlatesAndSpacers[I].Spacer = Steel then
-      Sa[I] := TextUiSteel.KeyData[FUiLang]
+      Sa[I] := TextUiSteel.KeyData[UiLang]
     else
-      Sa[I] := TextUiPlastic.KeyData[FUiLang];
-  FView.FillSpacers(Sa);
+      Sa[I] := TextUiPlastic.KeyData[UiLang];
+  FView.FillColSpacer(Sa);
 end;
 
-class procedure TPresenter.SelectLangMenuItem(ALang: TLanguage;
-  ALangs: array of TLanguage; AViewCall: TSubMenuSelector);
-var
-  I: Integer;
+procedure TPresenter.GetInputData;
 begin
-  for I := Low(ALangs) to High(ALangs) do
-    if ALangs[I] = ALang then begin
-      AViewCall(I);
-      break;
-    end;
-end;
-
-procedure TPresenter.TranslateUi;
-begin
-  SetUiLang(UiLangs[FView.GetUiSubMenuSelected]);
-  DoTranslateUi;
-  if not FErrors.IsEmpty then
-    PrintErrors;
-end;
-
-procedure TPresenter.TranslateOut;
-begin
-  SetOutLang(OutLangs[FView.GetOutSubMenuSelected]);
-  if FErrors.IsEmpty then
-    PrintResults;
-end;
-
-function TPresenter.GetInputData: TInputData;
-begin
-  Result.Ws := Low(TWidthSeries) + FView.GetWsIndex;
-  Result.Hs := HeightSeries.Keys[FView.GetHsIndex];
-  Result.NominalGap := FGapItems.Data[FView.GetGapIndex];
+  FInputData := Default(TInputData);
+  FInputData.Ws := Low(TWidthSeries) + FView.GetWsIndex;
+  FInputData.Hs := HeightSeries.Keys[FView.GetHsIndex];
+  FInputData.NominalGap := FGapItems.Data[FView.GetGapIndex];
   try
-    Result.Depth := SI(AdvStrToFloat(FView.GetDepthText), 'mm');
+    FInputData.Depth := SI(AdvStrToFloat(FView.GetDepthText), 'mm');
   except
     on E: EConvertError do
-      FErrors.Append(TextErrDepth, []);
+      LogError(TextErrDepth, []);
   end;
-  Result.PlateAndSpacer := PlatesAndSpacers[FView.GetPlateIndex];
-  Result.IsSteelOnly := FView.GetSteelOnly;
-  Result.Is60Hz := FView.GetIs60Hz;
-  if not FErrors.IsEmpty then
-    raise ELoggedError.Create('Invalid input data');
+  FInputData.PlateAndSpacer := PlatesAndSpacers[FView.GetPlateIndex];
+  FInputData.IsSteelOnly := FView.GetSteelOnly;
+  FInputData.Is60Hz := FView.GetIs60Hz;
 end;
 
-procedure TPresenter.Run;
+procedure TPresenter.Calculate;
 begin
-  FErrors.Clear;
-  FResults.Clear;
-  try
-    CalcStepScreen(GetInputData, Self);
-  except
-    on ELoggedError do begin
-      PrintErrors;
-      exit;
-    end;
-  end;
-  PrintResults;
-end;
-
-procedure TPresenter.PrintErrors;
-begin
-  FView.PrintText(FErrors.Text(FUiLang));
+  CalcStepScreen(FInputData, Self);
 end;
 
 procedure TPresenter.PrintResults;
 begin
-  FView.PrintText(FResults.Text(FOutLang));
+  FCore.PrintPlainResults;
+end;
+
+procedure TPresenter.PrintErrors;
+begin
+  FCore.PrintErrorsOnly;
+end;
+
+procedure TPresenter.ClearQueues;
+begin
+  FCore.ClearQueues;
+end;
+
+{ delegation only }
+
+procedure TPresenter.InitView;
+begin
+  FCore.InitView;
+end;
+
+procedure TPresenter.TranslateUi;
+begin
+  FCore.TranslateUi;
+end;
+
+procedure TPresenter.TranslateOut;
+begin
+  FCore.TranslateOut;
+end;
+
+procedure TPresenter.Run;
+begin
+  FCore.Run;
 end;
 
 procedure TPresenter.LogError(SpecMap: TTranslate; const Args: array of const);
 begin
-  FErrors.Append(SpecMap, Args);
+  FCore.LogError(SpecMap, Args);
 end;
 
 procedure TPresenter.AddOutput(SpecMap: TTranslate; const Args: array of const);
 begin
-  FResults.Append(SpecMap, Args);
+  FCore.AddOutput(SpecMap, Args);
 end;
 
 procedure TPresenter.AddOutput(const AText: String);
 begin
-  FResults.Append(AText);
+  FCore.AddOutput(AText);
 end;
 
 end.

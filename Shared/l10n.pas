@@ -27,7 +27,8 @@ var
 begin
   Result := Fallback;
   for I := 0 to LangCodes.Count - 1 do
-    if CompareText(LangCodes.Data[I], Code) = 0 then begin
+    if CompareText(LangCodes.Data[I], Code) = 0 then
+    begin
       Result := LangCodes.Keys[I];
       break;
     end;
@@ -64,9 +65,10 @@ initialization
   TextOutMenu.Add(Rus, 'Расчет');
   TextOutMenu.Add(Lit, 'Skaičiavimas');
 
-(*:= TTranslate.Create;
-  .Add(Eng, '');
-  .Add(Ukr, '');
-  .Add(Rus, '');
-  .Add(Lit, '');*)
+finalization
+  FreeAndNil(LangNames);
+  FreeAndNil(LangCodes);
+  FreeAndNil(TextUiRun);
+  FreeAndNil(TextUiMenu);
+  FreeAndNil(TextOutMenu);
 end.

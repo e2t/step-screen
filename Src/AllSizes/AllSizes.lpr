@@ -2,7 +2,7 @@ program AllSizes;
 
 uses
   Model,
-  UModelPresenter,
+  UPresenter,
   L10n,
   SysUtils;
 
@@ -28,10 +28,19 @@ begin
   WriteLn(AText);
 end;
 
+const
+  HeapFile = 'heap.trc';
 var
   Presenter: TPresenter;
 begin
+  {$IFDEF DEBUG}
+  if FileExists(HeapFile) then
+    DeleteFile(HeapFile);
+  SetHeapTraceOutput(HeapFile);
+  {$ENDIF}
+
   Presenter := TPresenter.Create;
   CalcAllSizes(Presenter);
+  Presenter.Free;
   ReadLn;
 end.

@@ -27,13 +27,15 @@ uses
 
 type
   TSettingManager = class(TInterfacedObject, ISettingManager)
+  private
+    FDir: String;
+    FIni: TIniFile;
+
+    { ISettingManager }
     function GetUiLangCode: String;
     function GetOutLangCode: String;
     procedure SetUiLangCode(ALang: TLanguage);
     procedure SetOutLangCode(ALang: TLanguage);
-  private
-    FDir: String;
-    FIni: TIniFile;
   public
     constructor Create(AppName: TGetAppNameEvent;
       AppVendor: TGetVendorNameEvent);
@@ -71,7 +73,6 @@ end;
 
 destructor TSettingManager.Destroy;
 begin
-  FIni.UpdateFile;
   FreeAndNil(FIni);
   inherited Destroy;
 end;

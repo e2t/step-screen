@@ -47,3 +47,4 @@ lib/
 *.dbg
 *.xlsx
 *.res
+*.trc

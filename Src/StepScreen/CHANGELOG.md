@@ -3,6 +3,12 @@
 [//]: # (YYYY-MM-DD)
 [//]: # (Added, Changed, Fixed, Deprecated, Removed, Security)
 
+## [24.1] 2024-01-03
+
+## Fixed
+
+- Усунуто витоки пам'яті.
+
 ## [23.3] 2023-12-12
 
 ## Added

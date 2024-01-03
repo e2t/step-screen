@@ -11,16 +11,20 @@ const
   MaxDigits = -6;
   MaxAccuracy = 1e-6;  { 10^MaxDigits }
 
-function IsEqual(A, B: ValReal; Accuracy: ValReal = MaxAccuracy): Boolean;
-function IsGreater(Larger, Smaller: ValReal; Accuracy: ValReal = MaxAccuracy): Boolean;
+function IsEqual(A, B: ValReal;
+  Accuracy: ValReal = MaxAccuracy): Boolean;
+function IsGreater(Larger, Smaller: ValReal;
+  Accuracy: ValReal = MaxAccuracy): Boolean;
 function IsGreaterOrEqual(Larger, Smaller: ValReal;
   Accuracy: ValReal = MaxAccuracy): Boolean;
-function IsLess(Smaller, Larger: ValReal; Accuracy: ValReal = MaxAccuracy): Boolean;
+function IsLess(Smaller, Larger: ValReal;
+  Accuracy: ValReal = MaxAccuracy): Boolean;
 function IsLessOrEqual(Smaller, Larger: ValReal;
   Accuracy: ValReal = MaxAccuracy): Boolean;
 
 function FStr(X: ValReal; Digits: TRoundToRange = MaxDigits): String;
 function AdvStrToFloat(const S: String): ValReal;
+function SafeTrunc(Value: ValReal): Integer;
 
 implementation
 
@@ -32,7 +36,8 @@ begin
   Result := CompareValue(A, B, Accuracy) = 0;
 end;
 
-function IsGreater(Larger, Smaller: ValReal; Accuracy: ValReal = MaxAccuracy): Boolean;
+function IsGreater(Larger, Smaller: ValReal;
+  Accuracy: ValReal = MaxAccuracy): Boolean;
 begin
   Result := CompareValue(Larger, Smaller, Accuracy) > 0;
 end;
@@ -43,7 +48,8 @@ begin
   Result := CompareValue(Larger, Smaller, Accuracy) >= 0;
 end;
 
-function IsLess(Smaller, Larger: ValReal; Accuracy: ValReal = MaxAccuracy): Boolean;
+function IsLess(Smaller, Larger: ValReal;
+  Accuracy: ValReal = MaxAccuracy): Boolean;
 begin
   Result := CompareValue(Smaller, Larger, Accuracy) < 0;
 end;
@@ -65,6 +71,11 @@ end;
 function AdvStrToFloat(const S: String): ValReal;
 begin
   Result := StrToFloat(StringReplace(S, ',', '.', []));
+end;
+
+function SafeTrunc(Value: ValReal): Integer;
+begin
+  Result := Trunc(RoundTo(Value, MaxDigits));
 end;
 
 end.

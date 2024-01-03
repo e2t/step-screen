@@ -4,7 +4,7 @@ uses
   Model,
   L10n,
   SysUtils,
-  UModelPresenter;
+  UPresenter;
 
 type
   TPresenter = class(TInterfacedObject, IModelPresenter)
@@ -28,10 +28,19 @@ begin
   WriteLn(AText);
 end;
 
+const
+  HeapFile = 'heap.trc';
 var
   Presenter: TPresenter;
 begin
+  {$IFDEF DEBUG}
+  if FileExists(HeapFile) then
+    DeleteFile(HeapFile);
+  SetHeapTraceOutput(HeapFile);
+  {$ENDIF}
+
   Presenter := TPresenter.Create;
   CalcSizeTable(Presenter);
+  Presenter.Free;
   ReadLn;
 end.

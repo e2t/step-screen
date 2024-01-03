@@ -1,14 +1,14 @@
 object MainForm: TMainForm
-  Left = 376
+  Left = 423
   Height = 400
-  Top = 142
+  Top = 180
   Width = 800
   Caption = 'MainForm'
   ClientHeight = 400
   ClientWidth = 800
   Menu = MainMenu1
   Position = poDefaultPosOnly
-  LCLVersion = '3.0.0.2'
+  LCLVersion = '3.0.0.3'
   object MainButtonPanel: TButtonPanel
     Left = 6
     Height = 26

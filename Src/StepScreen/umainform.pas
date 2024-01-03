@@ -12,15 +12,13 @@ uses
   Dialogs,
   Forms,
   Graphics,
+  GuiUtils,
   Menus,
   StdCtrls,
   SysUtils,
-  UPresenter,
-  UViewPresenter;
+  UPresenter;
 
 type
-  TSubMenuEvent = procedure(Sender: TObject) of object;
-
   { TMainForm }
 
   TMainForm = class(TForm, IView)
@@ -46,19 +44,28 @@ type
     FPresenter: IViewPresenter;
     procedure CallTranslateUi(Sender: TObject);
     procedure CallTranslateOut(Sender: TObject);
-    class procedure AddSubMenuInto(AMenu: TMenuItem; const AItems: TStrings;
-      AEvent: TSubMenuEvent);
-    class function GetSelectedSubMenuOf(AMenu: TMenuItem): Integer;
-  public
-    constructor Create(TheOwner: TComponent); override;
+    { IBaseView }
+    procedure PrintText(const AText: String);
+    procedure SetTitle(const AText: String);
+    procedure SetRunLabel(const AText: String);
+    procedure SetUiMenuLabel(const AText: String);
+    procedure SetOutMenuLabel(const AText: String);
+    procedure AddUiSubMenu(AItems: TStrings);
+    procedure SelectUiSubMenu(AIndex: Integer);
+    function GetUiSubMenuSelected: Integer;
+    procedure AddOutSubMenu(AItems: TStrings);
+    procedure SelectOutSubMenu(AIndex: Integer);
+    function GetOutSubMenuSelected: Integer;
     { IView }
-    procedure FillWidthSeries(const ASeries: TStrings);
+    procedure FillWidthSeries(ASeries: TStrings);
     procedure SetWidthSerie(AIndex: Integer);
-    procedure FillHeightSeries(const ASeries: TStrings);
+    procedure FillHeightSeries(ASeries: TStrings);
     procedure SetHeightSerie(AIndex: Integer);
-    procedure FillGaps(const ASeries: TStrings);
+    procedure FillGaps(ASeries: TStrings);
     procedure SetGap(AIndex: Integer);
-    procedure FillPlates(const AItems: array of TStringList);
+    procedure FillColFixed(const AItems: array of String);
+    procedure FillColMoving(const AItems: array of String);
+    procedure FillColSpacer(const AItems: array of String);
     procedure SetPlatesAndSpacers(AIndex: Integer);
     procedure SetWsLabel(const AText: String);
     procedure SetHsLabel(const AText: String);
@@ -70,7 +77,6 @@ type
     procedure SetHeaderMoving(const AText: String);
     procedure SetHeaderSpacer(const AText: String);
     procedure Set60HzLabel(const AText: String);
-    procedure FillSpacers(const AItems: array of String);
     function GetWsIndex: Integer;
     function GetHsIndex: Integer;
     function GetGapIndex: Integer;
@@ -78,18 +84,9 @@ type
     function GetPlateIndex: Integer;
     function GetSteelOnly: Boolean;
     function GetIs60Hz: Boolean;
-    procedure PrintText(const AText: String);
-    { base }
-    procedure SetTitle(const AText: String);
-    procedure SetRunLabel(const AText: String);
-    procedure SetUiMenuLabel(const AText: String);
-    procedure SetOutMenuLabel(const AText: String);
-    procedure AddUiSubMenu(const AItems: TStrings);
-    procedure SelectUiSubMenu(AIndex: Integer);
-    function GetUiSubMenuSelected: Integer;
-    procedure AddOutSubMenu(const AItems: TStrings);
-    procedure SelectOutSubMenu(AIndex: Integer);
-    function GetOutSubMenuSelected: Integer;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
   end;
 
 var
@@ -99,15 +96,25 @@ implementation
 
 {$R *.lfm}
 
-constructor TMainForm.Create(TheOwner: TComponent);
-begin
-  inherited Create(TheOwner);
+const
+  ColFix = 0;
+  ColMov = 1;
+  ColSpacer = 2;
 
-  { After all initialization }
+constructor TMainForm.Create(AOwner: TComponent);
+begin
+  inherited;
   FPresenter := NewPresenter(self);
+  FPresenter.InitView;
 end;
 
-procedure TMainForm.FillWidthSeries(const ASeries: TStrings);
+destructor TMainForm.Destroy;
+begin
+  FPresenter.Free;
+  inherited;
+end;
+
+procedure TMainForm.FillWidthSeries(ASeries: TStrings);
 begin
   WsBox.Items := ASeries;
 end;
@@ -117,7 +124,7 @@ begin
   WsBox.ItemIndex := AIndex;
 end;
 
-procedure TMainForm.FillHeightSeries(const ASeries: TStrings);
+procedure TMainForm.FillHeightSeries(ASeries: TStrings);
 begin
   HsBox.Items := ASeries;
 end;
@@ -127,7 +134,7 @@ begin
   HsBox.ItemIndex := AIndex;
 end;
 
-procedure TMainForm.FillGaps(const ASeries: TStrings);
+procedure TMainForm.FillGaps(ASeries: TStrings);
 begin
   GapBox.Items := ASeries;
 end;
@@ -137,16 +144,19 @@ begin
   GapBox.ItemIndex := AIndex;
 end;
 
-procedure TMainForm.FillPlates(const AItems: array of TStringList);
-var
-  Sl: TStrings;
-  Row: TListItem;
+procedure TMainForm.FillColFixed(const AItems: array of String);
 begin
-  for Sl in AItems do begin
-    Row := PlateTable.Items.Add;
-    Row.Caption := Sl[0];
-    Row.SubItems := Sl.Slice(1);
-  end;
+  FillColumn(PlateTable, ColFix, AItems);
+end;
+
+procedure TMainForm.FillColMoving(const AItems: array of String);
+begin
+  FillColumn(PlateTable, ColMov, AItems);
+end;
+
+procedure TMainForm.FillColSpacer(const AItems: array of String);
+begin
+  FillColumn(PlateTable, ColSpacer, AItems);
 end;
 
 procedure TMainForm.SetPlatesAndSpacers(AIndex: Integer);
@@ -190,36 +200,7 @@ begin
   Application.Title := AText;
 end;
 
-class procedure TMainForm.AddSubMenuInto(AMenu: TMenuItem;
-  const AItems: TStrings; AEvent: TSubMenuEvent);
-var
-  I: Integer;
-  X: array of TMenuItem = nil;
-begin
-  SetLength(X, AItems.Count);
-  for I := Low(X) to High(X) do begin
-    X[I] := TMenuItem.Create(AMenu);
-    X[I].Caption := AItems[I];
-    X[I].RadioItem := True;
-    X[I].AutoCheck := True;
-    X[I].OnClick := AEvent;
-  end;
-  AMenu.Add(X);
-end;
-
-class function TMainForm.GetSelectedSubMenuOf(AMenu: TMenuItem): Integer;
-var
-  I: Integer;
-begin
-  Result := 0;
-  for I := 0 to AMenu.Count - 1 do
-    if AMenu.Items[I].Checked then begin
-      Result := I;
-      break;
-    end;
-end;
-
-procedure TMainForm.AddUiSubMenu(const AItems: TStrings);
+procedure TMainForm.AddUiSubMenu(AItems: TStrings);
 begin
   AddSubMenuInto(GuiMenu, AItems, @CallTranslateUi);
 end;
@@ -251,17 +232,17 @@ end;
 
 procedure TMainForm.SetHeaderFixed(const AText: String);
 begin
-  PlateTable.Column[0].Caption := AText;
+  PlateTable.Column[ColFix].Caption := AText;
 end;
 
 procedure TMainForm.SetHeaderMoving(const AText: String);
 begin
-  PlateTable.Column[1].Caption := AText;
+  PlateTable.Column[ColMov].Caption := AText;
 end;
 
 procedure TMainForm.SetHeaderSpacer(const AText: String);
 begin
-  PlateTable.Column[2].Caption := AText;
+  PlateTable.Column[ColSpacer].Caption := AText;
 end;
 
 procedure TMainForm.SetRunLabel(const AText: String);
@@ -279,15 +260,7 @@ begin
   OutMenu.Caption := AText;
 end;
 
-procedure TMainForm.FillSpacers(const AItems: array of String);
-var
-  I: Integer;
-begin
-  for I := Low(AItems) to High(AItems) do
-    PlateTable.Items[I].SubItems[1] := AItems[I];
-end;
-
-procedure TMainForm.AddOutSubMenu(const AItems: TStrings);
+procedure TMainForm.AddOutSubMenu(AItems: TStrings);
 begin
   AddSubMenuInto(OutMenu, AItems, @CallTranslateOut);
 end;
