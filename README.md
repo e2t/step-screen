@@ -1,3 +1,5 @@
+This project has been moved to https://codeberg.org/e2t/step-screen
+
 # StepScreen
 
 Desktop GUI application for calculating step screen.
